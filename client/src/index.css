@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+.bg-photo {
+  background-image: url('./photo/photo.webp');
+  background-size: cover;
+  background-position: center;
+}
+
+/* Hide default password reveal icon in Microsoft Edge and Chrome */
+input::-ms-reveal {
+  display: none;
+}
+input::-webkit-credentials-auto-fill-button,
+input::-webkit-password-reveal-button {
+  display: none !important;
+}
