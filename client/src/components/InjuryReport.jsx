@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { useNavigate } from "react-router-dom";
 
+
 function InjuryReport() {
   const [data1, setdata1] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
@@ -69,6 +70,8 @@ function InjuryReport() {
       );
 
       setGraphData(res.data);
+      console.log("Graph data fetched successfully:", res.data);
+      console.log()
     } catch (error) {
       console.error("Failed to fetch graph data:", error);
     } finally {
@@ -425,7 +428,7 @@ function InjuryReport() {
                   }
                   onClick={() => setGraphType("contractor")}
                 >
-                  By Contractor
+                  Employee vs Contractor
                 </button>
                 <button
                   className={
@@ -460,10 +463,10 @@ function InjuryReport() {
               </div>
 
               <div className="h-[80%] w-full mt-2">
-                <ResponsiveContainer width="80%" height="80%">
+                <ResponsiveContainer width="60%" height="100%">
                   {graphType === "contractor" ? (
                     <BarChart
-                      data={graphData.contractorGroup}
+                      data={graphData.contractVsEmployee}
                       margin={{ top: 40, right: 30, left: 20, bottom: 3 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
@@ -472,27 +475,27 @@ function InjuryReport() {
                       <Tooltip />
                       <Legend />
                       <Bar
-                        dataKey="contractorCount"
-                        name="Contractors"
+                        dataKey="value"
+                        name="total"
                         fill="#8884d8"
                       >
-                        <LabelList dataKey="contractorCount" position="top" />
+                        <LabelList dataKey="value" position="top" />
                       </Bar>
-                      <Bar
+                      {/* <Bar
                         dataKey="employeeCount"
                         name="Employees"
                         fill="#82ca9d"
                       >
                         <LabelList dataKey="employeeCount" position="top" />
-                      </Bar>
+                      </Bar> */}
                     </BarChart>
                   ) : graphType === "monthwise" ? (
                     <BarChart
-                      data={graphData.monthwiseData}
+                      data={graphData.monthwiseGroup}
                       margin={{ top: 40, right: 30, left: 20, bottom: 3 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
+                      <XAxis dataKey="month" />
                       <YAxis allowDecimals={false} />
                       <Tooltip />
                       <Legend />
