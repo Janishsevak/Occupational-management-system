@@ -10,6 +10,7 @@ import DailyReport from "./components/DailyReport"
 import InjuryReport from "./components/InjuryReport";
 import Admin from "./pages/Admin";
 import FTEReport from "./components/FTEReport";
+import Editreport from "./components/editreport";
 
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
      <Route path = "/injuryReport" element = {<InjuryReport />}/>
      <Route path = "/admin" element = {<Admin />}/>
      <Route path = "/FTEReport" element = {<FTEReport />}/>
+      <Route path = "/editreport" element = {<Editreport />}/>
 
     </Routes>
 

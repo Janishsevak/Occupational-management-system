@@ -5,6 +5,9 @@ import { IoMdEye } from "react-icons/io";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { Profilecontext } from "../context/Profilecontext";
+import { PiSpinnerGapBold } from "react-icons/pi";
+import { ImCancelCircle } from "react-icons/im";
+
 
 function Userlogin() {
   const [username, setusername] = useState("");
@@ -13,9 +16,18 @@ function Userlogin() {
   const [show, setshow] = useState(false);
   const navigate = useNavigate();
   const [login, setlogin] = useState("user");
+  const [loading, setLoading] = useState(false);
   const { setuserprofile } = useContext(Profilecontext);
+  const [showSlider, setShowSlider] = useState(false);
+  const [FormData, setformdata] = useState({
+    username: "",
+    oldpassword: "",
+    newpassword: "",
+    confirmpassword: "",
+  });
 
   const submithandler = async (e) => {
+    setLoading(true);
     e.preventDefault();
     const user = {
       username,
@@ -43,6 +55,7 @@ function Userlogin() {
         localStorage.setItem("origin", origin);
         localStorage.setItem("user", JSON.stringify(response.data.admin));
         setuserprofile(user);
+        console.log("User profile set:", user);
 
         if (login === "admin") {
           navigate("/admin"); // or whatever route admin should go to
@@ -54,6 +67,9 @@ function Userlogin() {
       console.error("Login failed:", error);
       toast.error("Login failed. Please check your credentials and try again.");
     }
+    finally {
+    setLoading(false); // Stop loading
+  }
   };
 
   return (
@@ -64,7 +80,7 @@ function Userlogin() {
           src="./photo/logo_alivus.webp"
           alt="Logo"
         /> */}
-        <h1 className="text-center text-4xl font-semibold mt-8">
+        <h1 className="text-center text-green-700 text-4xl font-semibold mt-8">
           OHC Management System
         </h1>
         <p className="mx-auto text-center text-lg mt-22 max-w-2xl">
@@ -135,7 +151,7 @@ function Userlogin() {
                 />
                 <span
                   onClick={() => setshow(!show)}
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-600 cursor-pointer"
+                  className="absolute top-1/2 right-3 transform -translate-y-1/2 p-0 text-gray-600 cursor-pointer"
                 >
                   {show ? <IoMdEyeOff size={20} /> : <IoMdEye size={20} />}
                 </span>
@@ -163,12 +179,75 @@ function Userlogin() {
                 <option value="Kurkumbh">Kurkumbh</option>
               </select>
             </div>
-             <button className="bg-blue-500 p-1.5 text-xl font-sans font-semibold rounded-lg hover:bg-blue-800 hover:cursor-pointer mt-5">
+             <button className="bg-blue-500 p-1.5 text-xl font-sans font-semibold rounded-lg hover:bg-blue-800 hover:cursor-pointer mt-5" disabled={loading}>
             Login
+            {loading && <PiSpinnerGapBold className="animate-spin inline-block ml-2" />}
           </button>
-          <p className="text-center underline">Forget Password ?</p>
+          <button onClick={()=>setShowSlider(true)} className="text-center underline">Forget Password ?</button>
           </div>     
         </form>
+        {showSlider && (
+                <div className="fixed top-0 right-0 h-full w-[400px] bg-white shadow-2xl z-50 transition-transform duration-1000">
+                  <div className="flex justify-between items-center px-4 py-3 border-b">
+                    <h2 className="text-xl font-semibold">Change Password</h2>
+                    <button
+                      onClick={() => setShowSlider(false)}
+                      className="text-xl font-bold hover:cursor-pointer"
+                    >
+                      <ImCancelCircle />
+                    </button>
+                  </div>
+                  <form className="p-4 space-y-4">
+                    <input
+                      type="text"
+                      placeholder="Username"
+                      className="w-full border rounded px-3 py-2"
+                      value={FormData.username}
+                      onChange={(e) =>
+                        setformdata({ ...FormData, username: e.target.value })
+                      }
+                    />
+                    <input
+                      type="text"
+                      placeholder="Old Password"
+                      className="w-full border rounded px-3 py-2"
+                      value={FormData.oldpassword}
+                      onChange={(e) =>
+                        setformdata({ ...FormData, oldpassword: e.target.value })
+                      }
+                    />
+                    <input
+                      type="password"
+                      placeholder="New Password"
+                      className="w-full border rounded px-3 py-2"
+                      value={FormData.newpassword}
+                      onChange={(e) =>
+                        setformdata({ ...FormData, newpassword: e.target.value })
+                      }
+                    />
+                    <input
+                      type="text"
+                      placeholder="Confirm Password"
+                      className="w-full border rounded px-3 py-2"
+                      value={FormData.confirmpassword}
+                      onChange={(e) =>
+                        setformdata({ ...FormData, confirmpassword: e.target.value })
+                      }
+                    />
+                    {FormData.newpassword !== FormData.confirmpassword &&
+                      FormData.confirmpassword && (
+                        <p className="text-sm text-red-500">Passwords do not match</p>
+                      )}
+                    <button
+                      type="submit"
+                      onClick={SubmitEvent}
+                      className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded hover:cursor-pointer"
+                    >
+                      Change Password
+                    </button>
+                  </form>
+                </div>
+              )}
       </div>
     </div>
   );

@@ -231,7 +231,7 @@ function Injury() {
         </button>
       </div>
       <div className="flex flex-col h-screen">
-        <div className="border border-gray-300 rounded-lg w-[100%] h-[43%] mt-1 ml-2 bg-white shadow  p-4">
+        <div className="border border-gray-300 rounded-lg w-[100%] h-[380px] mt-1 ml-2 bg-white shadow  p-4">
           <form
             onSubmit={(e) => {
               submitHandler(e);
@@ -495,7 +495,7 @@ function Injury() {
             </div>
           </form>
         </div>
-        <div className=" relative w-full overflow-y-scroll h-[50%]">
+        <div className="h-full w-full mt-5 overflow-y-scroll h-[]">
           <h1 className="text-center">Report Data</h1>
 
           <table className=" w-full border-collapse border border-gray-300 " />

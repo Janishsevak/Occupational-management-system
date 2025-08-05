@@ -6,6 +6,11 @@ import Dahej from "../components/admin/Dahej"
 import Kurkumbh from "../components/admin/Kurkumbh";
 import { useNavigate } from "react-router-dom";
 import { MdLogout } from "react-icons/md";
+import { FaUserPlus } from "react-icons/fa6";
+import { SlHome } from "react-icons/sl";
+
+import { BsKey } from "react-icons/bs";
+
 
 function Admin() {
   const [activeComponent, setActiveComponent] = useState("createuser");
@@ -42,42 +47,57 @@ function Admin() {
         />
       </div>
       <div className=" absolute w-[20%] top-0 h-screen bg-white">
-        <h1 className="text-center border-1 p-2">Admin Login</h1>
-        <div className="p-2 h-[88%] border-2 flex flex-col">
+        <h1 className=" pl-10 font-semibold text-2xl text-blue-500 p-2 ">Admin Login</h1>
+        <div className="p-2 h-[88%] bg-gray-50  flex flex-col">
           <ul className="space-y-4 ml-4">
-            <li
-              className={`hover:bg-green-300 hover:text-black cursor-pointer px-2 py-2 rounded ${activeComponent === "createuser" ? "bg-gray-300 text-black" : ""}`}
+            <div>
+              <li
+              className={`hover:bg-gray-300 hover:text-black cursor-pointer px-2 py-2 rounded text-lg ${activeComponent === "createuser" ? "bg-gray-300 text-black " : ""}`}
               onClick={() => setActiveComponent("createuser")}
-            >
+              >
+                <FaUserPlus className="inline-block mr-2" />
               Create user
-            </li>
-            <li
-              className={`hover:bg-green-300 hover:text-black cursor-pointer px-2 py-2 rounded ${activeComponent === "changepassword" ? "bg-gray-300 text-black" : ""}`}
+               </li>
+            </div>
+            <div>
+              <li
+              className={`hover:bg-gray-300 hover:text-black cursor-pointer px-2 py-2 rounded text-lg ${activeComponent === "changepassword" ? "bg-gray-300 text-black" : ""}`}
               onClick={() => setActiveComponent("changepassword")}
-            >
+              >
+                <BsKey className="inline-block mr-2" />
               Change Password
-            </li>
-            <li
-              className={`hover:bg-green-300 hover:text-black cursor-pointer px-2 py-2 rounded ${activeComponent === "ankleshwar" ? "bg-gray-300 text-black" : ""}`}
+             </li>
+            </div>
+            <div>
+              <li
+              className={`hover:bg-gray-300 hover:text-black cursor-pointer px-2 py-2 rounded text-lg ${activeComponent === "ankleshwar" ? "bg-gray-300 text-black" : ""}`}
               onClick={() => setActiveComponent("ankleshwar")}
-            >
+              >
+                <SlHome  className="inline-block mr-2" />
               Ankleshwar
-            </li>
-            <li
-              className={`hover:bg-green-300 hover:text-black cursor-pointer px-2 py-2 rounded ${activeComponent === "dahej" ? "bg-gray-300 text-black" : ""}`}
+             </li>
+            </div>
+            <div>
+              <li
+              className={`hover:bg-gray-300 hover:text-black cursor-pointer px-2 py-2 rounded text-lg ${activeComponent === "dahej" ? "bg-gray-300 text-black" : ""}`}
               onClick={() => setActiveComponent("dahej")}
-            >
+              >
+                <SlHome  className="inline-block mr-2" />
               Dahej
             </li>
-            <li
-              className={`hover:bg-green-300 hover:text-black cursor-pointer px-2 py-2 rounded ${activeComponent === "kurkumbh" ? "bg-gray-300 text-black" : ""}`}
+            </div>
+             <div>
+              <li
+              className={`hover:bg-gray-300 hover:text-black cursor-pointer px-2 py-2 rounded text-lg ${activeComponent === "kurkumbh" ? "bg-gray-300 text-black" : ""}`}
               onClick={() => setActiveComponent("kurkumbh")}
-            >
+              >
+                <SlHome    className="inline-block mr-2" />
               Kurkumbh
-            </li>
+              </li>
+             </div>
           </ul>
           <div className="flex justify-center mt-auto gap-1">
-            <button onClick={logouthandler} className=" bg-green-400 hover:bg-red-400 hover:cursor-pointer flex items-center justify-center  rounded-lg px-3 py-2 font-bold w-60 gap-2 ">
+            <button onClick={logouthandler} className=" bg-red-300 hover:bg-red-400 hover:cursor-pointer flex items-center justify-center  rounded-lg px-3 py-2 font-bold w-60 gap-2 ">
               <MdLogout className="text-3xl" />
               Logout</button>
         </div>

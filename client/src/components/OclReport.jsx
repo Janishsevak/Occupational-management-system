@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useState } from "react";
-import { OCLMedicalContext } from "../context/oclmedical.jsx";
-import { useContext } from "react";
+
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import React, { PureComponent } from "react";
@@ -20,7 +19,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 function OclReport() {
-  const { data1, setdata1 } = useContext(OCLMedicalContext);
+  const [ data1, setdata1 ] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchValue, setSearchValue] = useState("");

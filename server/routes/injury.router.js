@@ -1,7 +1,7 @@
 import express from "express";
 import isAuthenticated from '../middelwares/isAutenticated.js';
 import multer from 'multer';
-import { getinjurydata, injurydatadelete, injurydataentry, injurydataupdate, uploadexceldata } from "../controlers/injury.controler.js";
+import { getinjurydata, graphController, injurydatadelete, injurydataentry, injurydataupdate, uploadexceldata } from "../controlers/injury.controler.js";
 
 const router = express.Router()
 
@@ -13,5 +13,6 @@ router.route('/injurydata').get(isAuthenticated,getinjurydata);
 router.route('/deleteinjurydata/:id').delete(isAuthenticated, injurydatadelete);
 router.route('/updateinjurydata/:id').put(isAuthenticated, injurydataupdate);
 router.route('/uploadinjurydata').post(isAuthenticated, upload.single('file'),uploadexceldata);
+router.route('/graphdata').get(isAuthenticated, graphController.getGraphData);
 
 export default router;

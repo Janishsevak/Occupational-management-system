@@ -24,6 +24,7 @@ function Main() {
     toast.success("Logged out successfully");
     navigate("/");
   };
+
   const SubmitEvent = async (e) =>{
       e.preventDefault();
       const user = {
@@ -34,7 +35,7 @@ function Main() {
       }
       console.log(user)
       try {
-        const response = await axios.post("http://localhost:8000/api/v1/users/changepassword",
+        const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/v1/users/changepassword`,
           user,
           {
             headers: {
@@ -192,7 +193,7 @@ function Main() {
           to="/daily"
           className="w-80 text-2xl font-semibold px-20 py-10 mt-20 bg-amber-300 rounded-lg hover:bg-amber-500 cursor-pointer"
         >
-          Daily Medical{" "}
+          Daily OPD{" "}  
         </Link>
       </div>
     </div>

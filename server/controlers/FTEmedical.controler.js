@@ -171,6 +171,9 @@ export const deleteFTEmedicalentry = async (req, res) => {
   const db = getDbByOrigin(origin);
   const FTEmedical = defineFTEMedicalModel(db);
   const { id } = req.params;
+  if (!id){
+        return res.status(400).json({ message: 'Entry ID is required' });
+    }
 
   try {
     const deleted = await FTEmedical.destroy({ where: { id } });

@@ -3,6 +3,7 @@ import xlsx from "xlsx";
 
 import { defineInjuryModel } from "../models/injury.model.js";
 import { getDbByOrigin } from "../models/dbconnection.js";
+import { Op, Sequelize } from "sequelize";
 
 export const injurydataentry = async (req, res) => {
   const origin = req.user.origin || req.headers["x-origin"]; // Set this in your auth middleware
@@ -73,7 +74,7 @@ export const getinjurydata = async (req, res) => {
     }
     const db = getDbByOrigin(origin);
     const Injury = defineInjuryModel(db);
-    const entries = await Injury.findAll({ order: [['date', 'DESC']] });
+    const entries = await Injury.findAll({ order: [["date", "DESC"]] });
     return res.status(200).json({ entries, success: true });
   } catch (error) {
     console.log(error);
@@ -261,4 +262,110 @@ export const uploadexceldata = async (req, res) => {
     console.error("Error uploading data:", error);
     res.status(500).json({ message: "Internal server error", success: false });
   }
+};
+
+export const graphController = {
+  async getGraphData(req, res) {
+    const origin = req.user.origin || req.headers["x-origin"];
+    const db = getDbByOrigin(origin);
+    const Injury = defineInjuryModel(db);
+
+    try {
+      const { from, to } = req.query;
+
+      const whereClause = {};
+      if (from && to) {
+        whereClause.date = {
+          [Op.between]: [from, to],
+        };
+      } else if (from) {
+        whereClause.date = {
+          [Op.gte]: from,
+        };
+      } else if (to) {
+        whereClause.date = {
+          [Op.lte]: to,
+        };
+      }
+
+      // 1. Contract vs Employee Count (Bar chart)
+      const contractVsEmployee = await Injury.findAll({
+        attributes: [
+          ["category", "name"],
+          [Sequelize.fn("COUNT", Sequelize.col("category")), "value"],
+        ],
+
+        group: ["category"],
+        raw: true,
+      });
+
+      // 2. Month-wise Contract vs Employee (Bar chart)
+      const monthwiseGroupRaw = await Injury.findAll({
+        attributes: [
+          [
+            Sequelize.fn("DATE_FORMAT", Sequelize.col("date"), "%b %Y"),
+            "month",
+          ],
+          [
+            Sequelize.literal(
+              `SUM(CASE WHEN category = 'Contract' THEN 1 ELSE 0 END)`
+            ),
+            "contractorCount",
+          ],
+          [
+            Sequelize.literal(
+              `SUM(CASE WHEN category = 'Employee' THEN 1 ELSE 0 END)`
+            ),
+            "employeeCount",
+          ],
+        ],
+
+        group: [Sequelize.fn("DATE_FORMAT", Sequelize.col("date"), "%b %Y")],
+        order: [[Sequelize.fn("MIN", Sequelize.col("date")), "ASC"]],
+        raw: true,
+      });
+      const monthwiseGroup = monthwiseGroupRaw
+        .filter((item) => item.month) // remove entries with null month (just in case)
+        .map((item) => ({
+          month: item.month,
+          contractorCount: Number(item.contractorCount) || 0,
+          employeeCount: Number(item.employeeCount) || 0,
+        }));
+
+      // 3. Department-wise Count (Bar chart)
+      const departmentGroup = await Injury.findAll({
+        attributes: [
+          ["Department", "name"],
+          [Sequelize.fn("COUNT", Sequelize.col("Department")), "count"],
+        ],
+        where: {
+          Department: { [Op.ne]: null },
+        },
+        group: ["Department"],
+        raw: true,
+      });
+
+      // 4. Injury Type Count (Bar chart)
+      const injuryGroup = await Injury.findAll({
+        attributes: [
+          [Sequelize.fn("IFNULL", Sequelize.col("injury"), "Unknown"), "name"],
+          [Sequelize.fn("COUNT", Sequelize.col("injury")), "value"],
+        ],
+
+        group: [Sequelize.fn("IFNULL", Sequelize.col("injury"), "Unknown")],
+        raw: true,
+      });
+
+      return res.json({
+        success: true,
+        contractVsEmployee, // For overall contract vs employee chart
+        monthwiseGroup, // For time series grouped by month
+        departmentGroup, // Grouped by department
+        injuryGroup, // Grouped by injury type
+      });
+    } catch (error) {
+      console.error("Error fetching graph data:", error);
+      return res.status(500).json({ success: false, message: "Server error" });
+    }
+  },
 };

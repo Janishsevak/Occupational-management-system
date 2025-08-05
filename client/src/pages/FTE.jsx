@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import toast, { Toaster } from "react-hot-toast";
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { use } from 'react';
 import { useEffect } from 'react';
 // ...existing code...
 function FTE() {
@@ -71,6 +70,75 @@ function FTE() {
     
   };
 
+  const deleteHandler = async () => {
+    if (activeIndex === null) {
+      toast.error("Please select a record to delete");
+      return;
+    }
+    
+    const selectedData = data1[activeIndex];
+    try {
+      const idToDelete = selectedData.id; // ✅ changed from _id to id
+      if (!idToDelete) {
+        toast.error("Invalid entry ID");
+        return;
+      }
+      await axios.delete(`${import.meta.env.VITE_BASE_URL}/api/v1/FTEmedical/FTEmedicaldatadelete/${idToDelete}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "x-origin": origin,
+        },
+      });
+      toast.success("Data deleted successfully");
+      setdata1(data1.filter((_, index) => index !== activeIndex));
+      resetHandler();
+    } catch (error) {
+      console.error("Error while deleting data:", error);
+      toast.error("Something went wrong while deleting data");
+    }
+  };
+  const updateHandler = async () => {
+    if (activeIndex === null) {
+      toast.error("Please select a record to update");
+      return;
+    }
+    const selectedData = data1[activeIndex];
+    const updatedData = {
+      date: formData.date,
+      Name: formData.Name,
+      EmployeeID: formData.EmployeeID,
+      Department: formData.Department,
+      DOJ: formData.DOJ,
+      DOB: formData.DOB,
+      Desingation: formData.Desingation,
+      height: formData.height,
+      weight: formData.weight,
+      BP: formData.BP,
+      cholstrol: formData.cholstrol,
+      sugar: formData.sugar,
+      Hb: formData.Hb,
+      remarks: formData.remarks,
+    };
+    try {
+      await axios.put(`${import.meta.env.VITE_BASE_URL}/api/v1/FTEmedical/ftemedicalupdate/${selectedData._id}`, updatedData, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "x-origin": origin,
+        },
+      });
+      toast.success("Data updated successfully");
+      const updatedDataList = data1.map((data, index) =>
+        index === activeIndex ? { ...data, ...updatedData } : data
+      );
+      setdata1(updatedDataList);
+      resetHandler();
+    } catch (error) {
+      console.error("Error while updating data:", error);
+      toast.error("Something went wrong while updating data");
+    }
+  };
 const fetchData = async () => {
     const token = localStorage.getItem("token");
     await axios
@@ -145,14 +213,14 @@ useEffect(() => {
       </div>
       
       <div className="flex flex-col h-screen">
-        <div className="border border-gray-300 rounded-lg w-[100%] h-[43%] mt-1 ml-2 bg-white shadow  p-4">
+        <div className="border border-gray-300 rounded-lg w-[100%] h-[350px] ml-2 bg-white shadow  p-4">
           <form onSubmit={submitHandler}>
             <div>
               <h2 className="text-md font-semibold text-center p-1">
                 FTE Medical Form
               </h2>
             </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-4 p-4 h-[100%]">
+            <div className="flex flex-wrap gap-x-4 gap-y-4 p-4 h-[160px]">
               {/* Render all fields as per FTEmedical.model.js */}
               <div className="flex flex-col">
                 <label>Date</label>
@@ -239,10 +307,38 @@ useEffect(() => {
                   className="border border-gray-300 rounded-lg p-2 w-48" />
               </div>
             </div>
-            {/* ...existing buttons... */}
+            <div className="flex gap-3 my-10 justify-center">
+              <button
+                type="submit"
+                className="bg-blue-500 text-white px-7 py-2 rounded-lg hover:bg-blue-600 hover:cursor-pointer"
+              >
+                Submit
+              </button>
+              <button
+                type="reset"
+                onClick={resetHandler}
+                className="bg-blue-300 text-black px-7 py-2 rounded-lg hover:bg-gray-400 hover:cursor-pointer"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={deleteHandler}
+                className="bg-red-300 text-black px-7 py-2 rounded-lg hover:bg-gray-600 hover:cursor-pointer"
+              >
+                Delete
+              </button>
+              <button
+                type="submit"
+                onClick={updateHandler}
+                className="bg-green-300 text-black px-7 py-2 rounded-lg hover:bg-gray-400 hover:cursor-pointer"
+              >
+                Update
+              </button>
+            </div>
           </form>
         </div>
-        <div className="relative w-full overflow-y-scroll h-[50%]">
+        <div className=" w-full overflow-y-scroll ">
           <h1 className="text-center">Report Data</h1>
           <table className="w-full border-collapse border border-gray-300">
             <thead className="bg-gray-200 sticky top-0">

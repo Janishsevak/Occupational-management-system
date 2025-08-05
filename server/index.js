@@ -22,10 +22,22 @@ const PORT = process.env.PORT || 3000;
 const __dirname = path.resolve();
 
 app.use(cookieParser());
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://ttv6h7ww-5173.inc1.devtunnels.ms'
+];
+
 app.use(cors({
-    origin: 'http://localhost:5173', // Adjust this to your frontend URL
-    credentials: true, // Allow cookies to be sent
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api/v1/users', userRoutes);

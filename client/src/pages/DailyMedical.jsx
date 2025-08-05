@@ -28,27 +28,29 @@ function DailyMedical() {
     }
   }, [navigate]);
   useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        "http://localhost:8000/api/v1/dailymedical/getdailymedicalentries",
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-            "x-origin": origin,
-          },
-        }
-      );
-      const sortedData = response.data.entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 10);
-      setdata1(sortedData)
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
-  fetchData();
-}, []); 
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(
+          "http://localhost:8000/api/v1/dailymedical/getdailymedicalentries",
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+              "x-origin": origin,
+            },
+          }
+        );
+        const sortedData = response.data.entries
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .slice(0, 10);
+        setdata1(sortedData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+    fetchData();
+  }, []);
 
   const submitHandler = async (e) => {
     e.preventDefault();
@@ -84,13 +86,15 @@ function DailyMedical() {
 
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/api/v1/dailymedical/dailymedicalentry`,
+        `${
+          import.meta.env.VITE_BASE_URL
+        }/api/v1/dailymedical/dailymedicalentry`,
         data,
         {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "x-origin": origin
+            "x-origin": origin,
           },
         }
       );
@@ -137,18 +141,39 @@ function DailyMedical() {
     setActiveIndex(null);
   };
 
-  const deleteHandler = () => {
-    if (activeIndex !== null) {
-      const confirmDelete = window.confirm(
-        "Are you sure to delete this entry?"
-      );
-      if (!confirmDelete) {
+  const deleteHandler = async () => {
+    if (activeIndex === null) {
+      toast.error("Please select a record to delete");
+      return;
+    }
+    const selectedData = data1[activeIndex];
+    console.log("Selected data for deletion:", selectedData);
+    try {
+      const idToDelete = selectedData.id; // ✅ changed from _id to id
+      if (!idToDelete) {
+        toast.error("Invalid entry ID");
         return;
       }
-      const newData = data1.filter((_, index) => index !== activeIndex);
-      setdata1(newData);
-      setActiveIndex(null);
+
+      await axios.delete(
+        `${
+          import.meta.env.VITE_BASE_URL
+        }/api/v1/dailymedical/deletedailymedicalentry/${idToDelete}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "x-origin": origin,
+          },
+        }
+      );
+
+      toast.success("Data deleted successfully");
+      setdata1(data1.filter((_, index) => index !== activeIndex));
       resetHandler();
+    } catch (error) {
+      console.error("Error while deleting data:", error);
+      toast.error("Something went wrong while deleting data");
     }
   };
 
@@ -345,31 +370,31 @@ function DailyMedical() {
               />
             </div>
 
-            <div className="flex gap-3 p-2 items-center">
+            <div className="flex gap-3 my-10 justify-between">
               <button
                 type="submit"
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 hover:cursor-pointer"
+                className="bg-blue-500 text-white px-7 py-2 rounded-lg hover:bg-blue-600 hover:cursor-pointer"
               >
                 Submit
               </button>
               <button
                 type="reset"
                 onClick={resetHandler}
-                className="bg-blue-300 text-black px-4 py-2 rounded-lg hover:bg-gray-400 hover:cursor-pointer"
+                className="bg-blue-300 text-black px-7 py-2 rounded-lg hover:bg-gray-400 hover:cursor-pointer"
               >
                 Reset
               </button>
               <button
                 type="button"
                 onClick={deleteHandler}
-                className="bg-red-300 text-black px-4 py-2 rounded-lg hover:bg-gray-600 hover:cursor-pointer"
+                className="bg-red-300 text-black px-7 py-2 rounded-lg hover:bg-gray-600 hover:cursor-pointer"
               >
                 Delete
               </button>
               <button
                 type="submit"
                 onClick={updateHandler}
-                className="bg-green-300 text-black px-4 py-2 rounded-lg hover:bg-gray-400 hover:cursor-pointer"
+                className="bg-green-300 text-black px-7 py-2 rounded-lg hover:bg-gray-400 hover:cursor-pointer"
               >
                 Update
               </button>
@@ -407,6 +432,7 @@ function DailyMedical() {
                     Treatment: data.Treatment,
                   });
                   setActiveIndex(index);
+                  console.log("Selected data:", data);
                 }}
                 className={activeIndex === index ? "bg-gray-300" : ""}
               >

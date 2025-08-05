@@ -1,7 +1,5 @@
 import { useEffect, useRef } from "react";
 import { useState } from "react";
-import { OCLMedicalContext } from "../context/oclmedical.jsx";
-import { useContext } from "react";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import React, { PureComponent } from "react";
@@ -15,11 +13,12 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
 import { useNavigate } from "react-router-dom";
 
 function OclReport() {
-  const { data1, setdata1 } = useContext(OCLMedicalContext);
+  const [ data1, setdata1 ] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchValue, setSearchValue] = useState("");
@@ -32,24 +31,24 @@ function OclReport() {
     fileInputRef.current.click();
   };
 
-  const contractorCounts = data1.reduce((acc, curr) => {
-    // Check if Designation is a string and not a number
-    if (
-      curr.contractorName &&
-      curr.Designation &&
-      isNaN(Number(curr.Designation))
-    ) {
-      acc[curr.contractorName] = (acc[curr.contractorName] || 0) + 1;
-    }
-    return acc;
-  }, {});
+  // const contractorCounts = data1.reduce((acc, curr) => {
+  //   // Check if Designation is a string and not a number
+  //   if (
+  //     curr.contractorName &&
+  //     curr.Designation &&
+  //     isNaN(Number(curr.Designation))
+  //   ) {
+  //     acc[curr.contractorName] = (acc[curr.contractorName] || 0) + 1;
+  //   }
+  //   return acc;
+  // }, {});
 
-  const contractorData = Object.entries(contractorCounts).map(
-    ([name, count]) => ({
-      name,
-      count,
-    })
-  );
+  // const contractorData = Object.entries(contractorCounts).map(
+  //   ([name, count]) => ({
+  //     name,
+  //     count,
+  //   })
+  // );
 
   const categoryCounts = data1.reduce((acc, curr) => {
     const category = curr.category || curr.Category || "";
@@ -65,6 +64,7 @@ function OclReport() {
     { name: "FTE", count: categoryCounts.FTE || 0 },
     { name: "Contractor", count: categoryCounts.Contractor || 0 },
   ];
+  console.log("Employee vs Contractor Data:", employeeContractorData);
 
   const logouthandler = async () => {
     localStorage.removeItem("token");
@@ -83,12 +83,12 @@ function OclReport() {
     const key = `${item.contractorName} - ${month}`;
     monthwiseCounts[key] = (monthwiseCounts[key] || 0) + 1;
   });
-  const monthwiseData = Object.entries(monthwiseCounts).map(
-    ([name, count]) => ({
-      name,
-      count,
-    })
-  );
+  // const monthwiseData = Object.entries(monthwiseCounts).map(
+  //   ([name, count]) => ({
+  //     name,
+  //     count,
+  //   })
+  // );
 
   const searchhandler = () => {
     if (searchTerm === "" || searchValue === "") {
@@ -198,7 +198,7 @@ function OclReport() {
   return (
     <div className="h-full w-full flex-col justify-center">
       <h1 className="text-4xl text-center w-full p-2 bg-neutral-300">
-        OCL Report
+        OPD Report
       </h1>
       <div className="w-full flex items-center mt-1">
         <div className="flex w-[70%] gap-2 mt-2">
@@ -383,10 +383,10 @@ function OclReport() {
           <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50">
             <div className="bg-white p-6 rounded shadow-lg h-[93%] w-[95%]">
               <h2 className="text-xl text-center font-bold mb-4">
-                OCL Data Graph
+                OPD Data Graph
               </h2>
               <div className="items-center flex justify-center mb-4 gap-3">
-                <button
+                {/* <button
                   className={
                     graphType === "contractor"
                       ? "w-65 text-black px-4 py-2 rounded-lg bg-blue-500"
@@ -395,8 +395,8 @@ function OclReport() {
                   onClick={() => setGraphType("contractor")}
                 >
                   By Contractor
-                </button>
-                <button
+                </button> */}
+                {/* <button
                   className={
                     graphType === "monthwise"
                       ? "w-65 text-black px-4 py-2 rounded-lg bg-blue-500"
@@ -405,7 +405,7 @@ function OclReport() {
                   onClick={() => setGraphType("monthwise")}
                 >
                   Month-wise by Contractor
-                </button>
+                </button> */}
                 <button
                   className={
                     graphType === "employeeContractor"
@@ -417,17 +417,18 @@ function OclReport() {
                   Employee vs Contractor
                 </button>
               </div>
-              <div className="h-[86%] w-full mt-10">
-                <ResponsiveContainer width="80%" height="80%">
+              <div className="h-[400px] w-full mt-10">
+                <ResponsiveContainer width="100%" height="100%">
                   <BarChart
-                    width={20}
-                    height={300}
+                    // width={20}
+                    // height={300}
+                    // graphType === "contractor"
+                    //     ? contractorData
+                    //     : graphType === "monthwise"
+                    //     ? monthwiseData
+                    //     :
                     data={
-                      graphType === "contractor"
-                        ? contractorData
-                        : graphType === "monthwise"
-                        ? monthwiseData
-                        : employeeContractorData
+                       employeeContractorData
                     }
                     margin={{
                       top: 40,
@@ -446,12 +447,14 @@ function OclReport() {
                       name="Total Persons"
                       fill="#8884d8"
                       activeBar={<Rectangle fill="pink" stroke="blue" />}
-                    />
+                    >
+                      <LabelList dataKey="count" position="top" />
+                    </Bar>  
                   </BarChart>
                 </ResponsiveContainer>
               </div>
               <button
-                className="-mt-10 bg-blue-500 text-white px-4 py-2 rounded"
+                className="-mt-10 bg-blue-500 text-white px-4 py-2 rounded cursor-pointer hover:bg-blue-700"
                 onClick={() => setShowGraph(false)}
               >
                 Close

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { useState } from "react";
-import { OCLMedicalContext } from "../context/oclmedical.jsx";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import {
@@ -210,7 +209,7 @@ function FTEReport() {
   return (
     <div className="h-full w-full flex-col justify-center">
       <h1 className="text-4xl text-center w-full p-2 bg-neutral-300">
-        Injury Report
+        Employee Medical Report
       </h1>
       <div className="w-full flex items-center mt-1">
         <div className="flex w-[70%] gap-2 mt-2">
