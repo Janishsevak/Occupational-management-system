@@ -1,10 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useState } from "react";
-import { OCLMedicalContext } from "../context/oclmedical.jsx";
-import { useContext } from "react";
 import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
-import React, { PureComponent } from "react";
+import toast from "react-hot-toast";
 import {
   BarChart,
   Bar,
@@ -20,13 +17,23 @@ import {
 import { useNavigate } from "react-router-dom";
 
 function InjuryReport() {
-  const { data1, setdata1 } = useContext(OCLMedicalContext);
+  const [data1, setdata1] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchValue, setSearchValue] = useState("");
   const [showGraph, setShowGraph] = useState(false);
   const [graphType, setGraphType] = useState("contractor");
   const navigate = useNavigate();
+
+  const [graphData, setGraphData] = useState({
+    contractVsEmployee: [],
+    monthwiseGroup: [],
+    dailyTrend: [],
+    departmentGroup: [],
+    injuryGroup: [],
+  });
+
+  const [loading, setLoading] = useState(true);
 
   const origin = localStorage.getItem("origin");
 
@@ -35,105 +42,39 @@ function InjuryReport() {
     fileInputRef.current.click();
   };
 
-  const contractorGroupCounts = {};
-
-  data1.forEach((item) => {
-    const name = item.contractorName;
-    if (!contractorGroupCounts[name]) {
-      contractorGroupCounts[name] = {
-        name,
-        contractorCount: 0,
-        employeeCount: 0,
-      };
-    }
-
-    if (item.category === "Contract") {
-      contractorGroupCounts[name].contractorCount += 1;
-    } else {
-      contractorGroupCounts[name].employeeCount += 1;
-    }
-  });
-
-  const combinedContractorData = Object.values(contractorGroupCounts);
-  // Monthwise contractor count
-  const contractorMonthwiseCounts = {};
-  const employeeMonthwiseCounts = {};
-
-  data1.forEach((item) => {
-    if (!item.date) return;
-
-    const month = new Date(item.date).toLocaleString("default", {
-      month: "short",
-      year: "numeric",
-    });
-
-    // For contractors
-    const contractorKey = `${item.contractorName} - ${month}`;
-    contractorMonthwiseCounts[contractorKey] =
-      (contractorMonthwiseCounts[contractorKey] || 0) + 1;
-
-    // For employees
-    const employeeKey = `${item.Name} - ${month}`;
-    employeeMonthwiseCounts[employeeKey] =
-      (employeeMonthwiseCounts[employeeKey] || 0) + 1;
-  });
-
-  const monthwiseGroupCounts = {};
-
-  data1.forEach((item) => {
-    if (!item.date) return;
-
-    const month = new Date(item.date).toLocaleString("default", {
-      month: "short",
-      year: "numeric",
-    });
-
-    if (!monthwiseGroupCounts[month]) {
-      monthwiseGroupCounts[month] = {
-        name: month,
-        contractorCount: 0,
-        employeeCount: 0,
-      };
-    }
-
-    if (item.category === "Contract") {
-      monthwiseGroupCounts[month].contractorCount += 1;
-    } else {
-      monthwiseGroupCounts[month].employeeCount += 1;
-    }
-  });
-
-  const combinedMonthwiseData = Object.values(monthwiseGroupCounts);
-
-  const deptWiseCounts = {};
-
-  data1.forEach((item) => {
-    if (!item.Department) return;
-
-    deptWiseCounts[item.Department] =
-      (deptWiseCounts[item.Department] || 0) + 1;
-  });
-
-  const deptWiseData = Object.entries(deptWiseCounts).map(([name, count]) => ({
-    name, // department name
-    count, // total incidents
-  }));
   
 
-      const injuryCounts = {};
-      data1.forEach((entry) => {
-        const injury = entry.injury || "Unknown";
-        injuryCounts[injury] = (injuryCounts[injury] || 0) + 1;
-      });
+  useEffect(() => {
+    fetchGraphData();
+  }, []);
 
-      const processedData = Object.entries(injuryCounts).map(
-        ([name, value]) => ({
-          name,
-          value,
-        })
+  const fetchGraphData = async () => {
+    try {
+      setLoading(true);
+
+      const res = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/api/v1/injurydata/graphdata`,
+        {
+          params: {
+            from: "2025-01-01", // optional
+            to: "2025-12-31", // optional
+          },
+          headers: {
+
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            "x-origin": origin,
+            // You can remove Content-Type for GET requests
+          },
+        }
       );
-      
-   
+
+      setGraphData(res.data);
+    } catch (error) {
+      console.error("Failed to fetch graph data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const searchhandler = () => {
     if (searchTerm === "" || searchValue === "") {
@@ -181,7 +122,7 @@ function InjuryReport() {
     toast.success("Logged out successfully");
     navigate("/");
   };
-  
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -522,7 +463,7 @@ function InjuryReport() {
                 <ResponsiveContainer width="80%" height="80%">
                   {graphType === "contractor" ? (
                     <BarChart
-                      data={combinedContractorData}
+                      data={graphData.contractorGroup}
                       margin={{ top: 40, right: 30, left: 20, bottom: 3 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
@@ -547,7 +488,7 @@ function InjuryReport() {
                     </BarChart>
                   ) : graphType === "monthwise" ? (
                     <BarChart
-                      data={combinedMonthwiseData}
+                      data={graphData.monthwiseData}
                       margin={{ top: 40, right: 30, left: 20, bottom: 3 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
@@ -572,7 +513,7 @@ function InjuryReport() {
                     </BarChart>
                   ) : graphType === "injurywise" ? (
                     <BarChart
-                      data={processedData}
+                      data={graphData.injuryGroup}
                       margin={{ top: 40, right: 30, left: 20, bottom: 3 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
@@ -580,11 +521,7 @@ function InjuryReport() {
                       <YAxis allowDecimals={false} />
                       <Tooltip />
                       <Legend />
-                      <Bar
-                        dataKey="value"
-                        name="total"
-                        fill="#8884d8"
-                      >
+                      <Bar dataKey="value" name="total" fill="#8884d8">
                         <LabelList dataKey="value" position="top" />
                       </Bar>
                       {/* <Bar
@@ -597,7 +534,7 @@ function InjuryReport() {
                     </BarChart>
                   ) : (
                     <BarChart
-                      data={deptWiseData}
+                      data={graphData.departmentGroup}
                       margin={{ top: 40, right: 30, left: 20, bottom: 3 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
