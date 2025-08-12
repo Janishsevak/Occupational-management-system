@@ -15,6 +15,10 @@ import {
   LabelList,
 } from "recharts";
 import { useNavigate } from "react-router-dom";
+import { Divider, Radio, Table } from "antd";
+import Modalform from "./Modalform";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchInjuriesAsync } from "../feture/InjurySlice";
 
 
 function InjuryReport() {
@@ -25,6 +29,12 @@ function InjuryReport() {
   const [showGraph, setShowGraph] = useState(false);
   const [graphType, setGraphType] = useState("contractor");
   const navigate = useNavigate();
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [showModalForm, setShowModalForm] = useState(false);
+  const [selectedData, setSelectedData] = useState([]);
+  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(true);
+  const { injuries } = useSelector((state) => state.injury);
 
   const [graphData, setGraphData] = useState({
     contractVsEmployee: [],
@@ -33,8 +43,97 @@ function InjuryReport() {
     departmentGroup: [],
     injuryGroup: [],
   });
-
-  const [loading, setLoading] = useState(true);
+  const columns = [
+    {
+      title: "Sr.No",
+      dataIndex: "srNo",
+      key: "srNo",
+      render: (text, record, index) =>
+        (pagination.current - 1) * pagination.pageSize + index + 1,
+    },
+    {
+      title: "Date",
+      dataIndex: "date",
+      key: "date",
+      render: (date) =>
+        date ? new Date(date).toLocaleDateString("en-GB") : "",
+    },
+    {
+      title: "Name",
+      dataIndex: "Name",
+      key: "Name",
+    },
+    {
+      title: "Department",
+      dataIndex: "Department",
+      key: "Department",
+    },
+    {
+      title: "Category",
+      dataIndex: "category",
+      key: "category",
+    },
+    {
+      title: "Designation",
+      dataIndex: "Designation",
+      key: "Designation",
+    },
+    {
+      title: "Age",
+      dataIndex: "age",
+      key: "age",
+    },
+    {
+      title: "Injury",
+      dataIndex: "injury",
+      key: "injury",
+    },
+    {
+      title: "Treatment",
+      dataIndex: "Treatment",
+      key: "Treatment",
+    },
+    {
+      title: "Refer-To",
+      dataIndex: "Refer_to",
+      key: "Refer_to",
+    },
+    {
+      title: "Admit",
+      dataIndex: "Admit",
+      key: "Admit",
+    },
+    {
+      title: "Follow-up",
+      dataIndex: "FollowUp_Date",
+      key: "FollowUp_Date",
+      render: (date) =>
+        date ? new Date(date).toLocaleDateString("en-GB") : "",
+    },
+    {
+      title: "Discharge",
+      dataIndex: "Discharge",
+      key: "Discharge",
+      render: (date) =>
+        date ? new Date(date).toLocaleDateString("en-GB") : "",
+    },
+    {
+      title: "Return to Duty",
+      dataIndex: "Return_to_Duty",
+      key: "Return_to_Duty",
+      render: (date) =>
+        date ? new Date(date).toLocaleDateString("en-GB") : "",
+    },
+    {
+      title: "Bill Amount",
+      dataIndex: "BillAmount",
+      key: "BillAmount",
+    },
+  ];
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
 
   const origin = localStorage.getItem("origin");
 
@@ -43,7 +142,23 @@ function InjuryReport() {
     fileInputRef.current.click();
   };
 
-  
+  const onSelectChange = (newSelectedRowKeys) => {
+    console.log("selectedRowKeys changed: ", newSelectedRowKeys);
+    setSelectedRowKeys(newSelectedRowKeys);
+    if (newSelectedRowKeys.length > 0) {
+      const selectedData = data1.find(
+        (item) => item.id === newSelectedRowKeys[0]
+      );
+      setSelectedData(selectedData);
+      console.log("Selected data:", selectedData);
+    } else {
+      setSelectedData(null);
+    }
+  };
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: onSelectChange,
+  };
 
   useEffect(() => {
     fetchGraphData();
@@ -61,8 +176,7 @@ function InjuryReport() {
             to: "2025-12-31", // optional
           },
           headers: {
-
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
             "x-origin": origin,
             // You can remove Content-Type for GET requests
           },
@@ -71,7 +185,7 @@ function InjuryReport() {
 
       setGraphData(res.data);
       console.log("Graph data fetched successfully:", res.data);
-      console.log()
+      console.log();
     } catch (error) {
       console.error("Failed to fetch graph data:", error);
     } finally {
@@ -105,20 +219,27 @@ function InjuryReport() {
     setdata1(filteredData);
   };
 
+  // const fetchData = async () => {
+  //   setLoading(true); // Start loading
+  //   const token = localStorage.getItem("token");
+  //   axios
+  //     .get(`${import.meta.env.VITE_BASE_URL}/api/v1/injurydata/injurydata`, {
+  //       headers: {
+  //         "Content-Type": "multipart/form-data",
+  //         Authorization: `Bearer ${token}`,
+  //         "x-origin": origin,
+  //       },
+  //     })
+  //     .then((res) => setdata1(res.data.entries))
+  //     .catch((error) => console.error("Error fetching data:", error));
+  // };
+  
+ 
   const fetchData = async () => {
-    const token = localStorage.getItem("token");
-    axios
-      .get(`${import.meta.env.VITE_BASE_URL}/api/v1/injurydata/injurydata`, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-          "x-origin": origin,
-        },
-      })
-      .then((res) => setdata1(res.data.entries))
-      .catch((error) => console.error("Error fetching data:", error));
-  };
 
+    dispatch(fetchInjuriesAsync({ origin }));
+    setdata1(injuries);
+  }
   const logouthandler = async () => {
     localStorage.removeItem("token");
     localStorage.removeItem("origin");
@@ -130,6 +251,7 @@ function InjuryReport() {
     const token = localStorage.getItem("token");
     if (token) {
       fetchData();
+      
     }
   }, []);
 
@@ -190,16 +312,21 @@ function InjuryReport() {
     }
   };
 
-  return (
+
+return loading ? (
+    <div className="flex justify-center items-center h-screen">
+      <div className="loader"></div>
+    </div>
+  ) : (
     <div className="h-full w-full flex-col justify-center">
       <h1 className="text-4xl text-center w-full p-2 bg-neutral-300">
         Injury Report
       </h1>
       <div className="w-full flex items-center mt-1">
-        <div className="flex w-[70%] gap-2 mt-2">
+        <div className="flex w-[80%] gap-2 mt-2">
           <select
             placeholder="Search by Name"
-            className="border border-gray-300 rounded-lg p-2 ml-5 w-48 mb-2"
+            className="border border-gray-300 rounded-lg px-4 py-2 ml-5 w-48 mb-2"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           >
@@ -238,6 +365,27 @@ function InjuryReport() {
           >
             Clear
           </button>
+          <button
+            className="bg-green-400 w-35  py-2 mb-2 rounded-lg hover:bg-green-600 hover:cursor-pointer"
+            onClick={() => {
+              if (!selectedRowKeys || selectedRowKeys.length === 0) {
+                toast.error("Please select a single entry to edit.");
+              } else if (selectedRowKeys.length > 1) {
+                toast.error("Please select only one entry to edit.");
+              } else {
+                setShowModalForm(true);
+              }
+            }}
+          >
+            {" "}
+            change request
+          </button>
+          {showModalForm && (
+            <Modalform
+              data={selectedData}
+              onClose={() => setShowModalForm(false)}
+            />
+          )}
         </div>
         <div className="flex w-[30%] justify-end items-center">
           <button
@@ -269,7 +417,7 @@ function InjuryReport() {
       </div>
       <div className="h-full w-full mt-2 pb-20">
         <div className="ml-4 ">
-          <table className="w-[90%] border-collapse border border-gray-300">
+          {/* <table className="w-[90%] border-collapse border border-gray-300">
             <thead className="bg-gray-200 sticky top-0">
               <tr>
                 <th className="border border-gray-300 p-2 w-30">Sr.No</th>
@@ -360,13 +508,26 @@ function InjuryReport() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table> */}
+          <Table
+            rowSelection={rowSelection}
+            columns={columns}
+            dataSource={data1}
+            rowKey="id"
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: data1.length,
+              onChange: (page, pageSize) =>
+                setPagination({ current: page, pageSize }),
+            }}
+          />
         </div>
       </div>
       <div>
         <nav className="fixed bottom-0 left-0 right-0 bg-gray-100 shadow-lg p-4 flex items-center z-50">
           <div className="flex items-center w-[50%]">
-            <span className="mr-2">Total data: {data1.length}</span>
+            <span className="mr-2">Total data: {injuries.length}</span>
           </div>
           <div className="flex justify-center items-center gap-4">
             <button
@@ -385,10 +546,10 @@ function InjuryReport() {
                   : "hidden"
               }
               onClick={() => {
-                const selectedData = data1[activeIndex];
+                const selectedData = injuries[activeIndex];
                 if (selectedData) {
                   const {
-                    _id,
+                    id,
                     date,
                     Name,
                     contractorName,
@@ -402,7 +563,7 @@ function InjuryReport() {
                     "en-GB"
                   );
                   console.log(
-                    `ID: ${_id}, Date: ${formattedDate}, Workmen Name: ${Name}, Contractor Name: ${contractorName}, Age: ${age}, category: ${category}, Designation : ${Designation}, purpose: ${purpose}, Treatment: ${Treatment}`
+                    `ID: ${id}, Date: ${formattedDate}, Workmen Name: ${Name}, Contractor Name: ${contractorName}, Age: ${age}, category: ${category}, Designation : ${Designation}, purpose: ${purpose}, Treatment: ${Treatment}`
                   );
                 }
               }}
@@ -474,11 +635,7 @@ function InjuryReport() {
                       <YAxis allowDecimals={false} />
                       <Tooltip />
                       <Legend />
-                      <Bar
-                        dataKey="value"
-                        name="total"
-                        fill="#8884d8"
-                      >
+                      <Bar dataKey="value" name="total" fill="#8884d8">
                         <LabelList dataKey="value" position="top" />
                       </Bar>
                       {/* <Bar

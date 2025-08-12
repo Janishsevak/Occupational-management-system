@@ -40,7 +40,7 @@ export const injurydataentry = async (req, res) => {
       .json({ message: "All fields are required", success: false });
 
   try {
-    await Injury.create({
+    const result = await Injury.create({
       date,
       Name,
       Department,
@@ -59,6 +59,10 @@ export const injurydataentry = async (req, res) => {
     return res.status(201).json({
       message: "Injury data entry created successfully",
       success: true,
+      entries: result, // Wrap in an array to match the expected response structure
+      
+
+
     });
   } catch (error) {
     console.error("Error Injury data entry:", error);
@@ -93,15 +97,32 @@ export const injurydatadelete = async (req, res) => {
     return res.status(400).json({ message: "Entry ID is required" });
   }
   try {
-    const deleteentry = await Injury.destroy({ where: { id } });
-    if (!deleteentry) {
-      return res
-        .status(404)
-        .json({ message: "Entry not found", success: false });
-    }
-    return res
-      .status(200)
-      .json({ message: " Injury data deleted successfully", success: true });
+    let deletecount = 0;
+
+      // Bulk delete: Expecting { ids: [1,2,3] } in body
+      if (Array.isArray(req.body.ids) && req.body.ids.length > 0) {
+        deletecount = await Injury.destroy({ where: {
+          id:{[Op.in]:req.body.ids} }
+        });
+        // single delete: Expecting { id: 1 } in body
+      } else if (req.body.id) {
+        deletecount = await Injury.destroy({ where: { id: req.body.id } });
+      } else {
+        return res.status(400).json({
+        message: "Entry ID or IDs are required",
+        success: false
+        });
+      }
+      if (deletecount === 0) {
+        return res.status(404).json({
+          message: "No entries found to delete",
+          success: false
+        });
+      }
+      return res.status(200).json({
+        message: `${deletecount} Injury data entry deleted successfully`,
+        success: true
+      });
   } catch (error) {
     console.error("Error deleting Injury data:", error);
     res.status(500).json({ message: "Internal server error" });

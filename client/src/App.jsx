@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useNavigate } from "react-router-dom";
 import Userlogin from "./pages/userlogin";
 import Main from "./pages/Main";
 import OCL from "./pages/OCL";
@@ -11,9 +11,20 @@ import InjuryReport from "./components/InjuryReport";
 import Admin from "./pages/Admin";
 import FTEReport from "./components/FTEReport";
 import Editreport from "./components/editreport";
+import { useEffect } from "react";
+import { setupAxiosInterceptors } from "./axiossetup";
+import useAuthCheck from "./useAuthcheck";
+
 
 
 function App() {
+  const navigate = useNavigate();
+  useAuthCheck();
+  useEffect(() => {
+    setupAxiosInterceptors(navigate);
+  }, [navigate]);
+
+
   return (
     <Routes>  
      <Route path = "/" element= {<Userlogin />} />

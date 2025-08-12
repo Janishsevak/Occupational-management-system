@@ -11,6 +11,7 @@ function Main() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const [showSlider, setShowSlider] = useState(false);
+  const [loading] = useState(false);
   const [FormData,setformdata] = useState({
            username : "",
            oldpassword:"",
@@ -73,7 +74,26 @@ function Main() {
              confirmpassword:""
     })
   }  
-  return (
+  return loading ? (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh", // full screen height
+        }}
+      >
+        <RotatingLines
+          visible={true}
+          height="96"
+          width="96"
+          color="grey"
+          strokeWidth="5"
+          animationDuration="0.75"
+          ariaLabel="rotating-lines-loading"
+        />
+      </div>
+    ) : (
     <div className="h-screen w-screen bg-photo "> {/**/}
       <div className=" relative flex flex-col items-end mr-10">
         <CgProfile

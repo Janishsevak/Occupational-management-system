@@ -2,9 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useDispatch, useSelector } from "react-redux";
+import { addInjuryAsync, fetchInjuriesAsync } from "../feture/InjurySlice";
+import { RotatingLines } from "react-loader-spinner";
 
 function Injury() {
   const origin = localStorage.getItem("origin");
+  const dispatch = useDispatch();
 
   const [formData, setFormData] = useState({
     date: "",
@@ -25,74 +29,53 @@ function Injury() {
   const navigate = useNavigate();
   const [data1, setdata1] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
+  const { injuries, loading } = useSelector((state) => state.injury);
 
-  const fetchData = async () => {
-    const token = localStorage.getItem("token");
-    axios
-      .get("http://localhost:8000/api/v1/injurydata/injurydata", {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-          "x-origin": origin,
-        },
-      })
-      .then((res) => {
-        const sortedData = res.data.entries
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-          .slice(0, 10);
-        setdata1(sortedData);
-      })
-      .catch((error) => console.error("Error fetching data:", error));
-  };
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
       navigate("/");
       return;
     }
-    fetchData();
   }, []);
+  const fetchdata = () => {
+    console.log("Injury data", injuries);
+    dispatch(fetchInjuriesAsync({ origin }));
+  };
+  useEffect(() => {
+    fetchdata();
+  }, [dispatch, origin]);
 
   const submitHandler = async (e) => {
     e.preventDefault();
-    const data = [
-      {
-        date: formData.date,
-        Name: formData.Name,
-        Department: formData.Department,
-        category: formData.category,
-        Designation: formData.Designation,
-        age: formData.age,
-        injury: formData.injury,
-        Treatment: formData.Treatment,
-        Refer_to: formData.Refer_to,
-        Admit: formData.Admit,
-        FollowUpDate: formData.FollowUpDate,
-        Discharge: formData.Discharge,
-        Return_to_Duty: formData.Return_to_Duty,
-        BillAmount: formData.BillAmount,
-      },
-    ];
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/api/v1/injurydata/injurydata`,
-        data,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "x-origin": origin,
-          },
-        }
-      );
-      console.log("Data entry successfully");
-      toast.success("Data entry successfully");
-      setdata1([...data1, ...data]);
-      resetHandler();
-    } catch (error) {
-      console.error("Error while submitting data:", error);
-      toast.error("Something went wrong while submitting data");
-    }
+    const data = {
+      date: formData.date,
+      Name: formData.Name,
+      Department: formData.Department,
+      category: formData.category,
+      Designation: formData.Designation,
+      age: formData.age,
+      injury: formData.injury,
+      Treatment: formData.Treatment,
+      Refer_to: formData.Refer_to,
+      Admit: formData.Admit,
+      FollowUpDate: formData.FollowUpDate,
+      Discharge: formData.Discharge,
+      Return_to_Duty: formData.Return_to_Duty,
+      BillAmount: formData.BillAmount,
+    };
+    console.log("Form data to submit:", data, origin);
+    dispatch(addInjuryAsync({ formData: data, origin }))
+      .unwrap()
+      .then((res) => {
+        toast.success("Data added successfully");
+        console.log("Data added successfully:", res);
+        fetchdata();
+        resetHandler();
+      })
+      .catch((err) => {
+        toast.error(err || "Failed to add data");
+      });
   };
   const resetHandler = () => {
     setFormData({
@@ -163,49 +146,80 @@ function Injury() {
         alert("Could not find record id.");
         return;
       }
-      try {
-        await axios.put(
-          `${
-            import.meta.env.VITE_BASE_URL
-          }/api/v1/injurydata/updateinjurydata/${idToupdate}`,
-          {
-            date: formData.date,
-            Name: formData.Name,
-            Department: formData.Department,
-            category: formData.category,
-            Designation: formData.Designation,
-            age: formData.age,
-            injury: formData.injury,
-            Treatment: formData.Treatment,
-            Refer_to: formData.Refer_to,
-            Admit: formData.Admit,
-            FollowUpDate: formData.FollowUpDate,
-            Discharge: formData.Discharge,
-            Return_to_Duty: formData.Return_to_Duty,
-            BillAmount: formData.BillAmount,
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-              "x-origin": origin,
-            },
-          }
-        );
-        toast.success("Data updated successfully");
-        setActiveIndex(null);
-        resetHandler();
-        fetchData(); // Always fetch fresh data after delete
-      } catch (error) {
-        console.error("Error updating data:", error);
-        toast.error("Error updating data");
-      }
-    } else {
-      alert("Please select an entry to update.");
+      //   try {
+      //     await axios.put(
+      //       `${
+      //         import.meta.env.VITE_BASE_URL
+      //       }/api/v1/injurydata/updateinjurydata/${idToupdate}`,
+      //       {
+      //         date: formData.date,
+      //         Name: formData.Name,
+      //         Department: formData.Department,
+      //         category: formData.category,
+      //         Designation: formData.Designation,
+      //         age: formData.age,
+      //         injury: formData.injury,
+      //         Treatment: formData.Treatment,
+      //         Refer_to: formData.Refer_to,
+      //         Admit: formData.Admit,
+      //         FollowUpDate: formData.FollowUpDate,
+      //         Discharge: formData.Discharge,
+      //         Return_to_Duty: formData.Return_to_Duty,
+      //         BillAmount: formData.BillAmount,
+      //       },
+      //       {
+      //         headers: {
+      //           "Content-Type": "application/json",
+      //           Authorization: `Bearer ${localStorage.getItem("token")}`,
+      //           "x-origin": origin,
+      //         },
+      //       }
+      //     );
+      //     toast.success("Data updated successfully");
+      //     setActiveIndex(null);
+      //     resetHandler();
+      //     fetchData(); // Always fetch fresh data after delete
+      //   } catch (error) {
+      //     console.error("Error updating data:", error);
+      //     toast.error("Error updating data");
+      //   }
+      // } else {
+      //   alert("Please select an entry to update.");
+      // }
     }
   };
+  // if (loading) return render(<RotatingLines
+  // visible={true}
+  // height="96"
+  // width="96"
+  // color="grey"
+  // strokeWidth="5"
+  // animationDuration="0.75"
+  // ariaLabel="rotating-lines-loading"
+  // wrapperStyle={{}}
+  // wrapperClass=""
+  // />);
 
-  return (
+  return loading ? (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh", // full screen height
+      }}
+    >
+      <RotatingLines
+        visible={true}
+        height="96"
+        width="96"
+        color="grey"
+        strokeWidth="5"
+        animationDuration="0.75"
+        ariaLabel="rotating-lines-loading"
+      />
+    </div>
+  ) : (
     <div className="h-screen w-screen ">
       <div className="flex w-full">
         <button
@@ -498,124 +512,128 @@ function Injury() {
         <div className="h-full w-full mt-5 overflow-y-scroll h-[]">
           <h1 className="text-center">Report Data</h1>
 
-          <table className=" w-full border-collapse border border-gray-300 " />
-          <thead className=" bg-gray-200 sticky top-0">
-            <tr>
-              <th className="border border-gray-300 p-2 w-10">Sr.No</th>
-              <th className="border border-gray-300 p-2 w-30">Date</th>
-              <th className="border border-gray-300 p-2 w-30">Name</th>
-              <th className="border border-gray-300 p-2 w-30">Department</th>
-              <th className="border border-gray-300 p-2 w-30">Category</th>
-              <th className="border border-gray-300 p-2 w-30 ">ID/Contract</th>
-              <th className="border border-gray-300 p-2 w-30">Age</th>
-              <th className="border border-gray-300 p-2 w-30 ">Injury</th>
-              <th className="border border-gray-300 p-2 w-30 ">Treatment</th>
-              <th className="border border-gray-300 p-2 w-30">Refer-To</th>
-              <th className="border border-gray-300 p-2 w-30">Admit</th>
-              <th className="border border-gray-300 p-2 w-30">Follow-up</th>
-              <th className="border border-gray-300 p-2 w-30">Discharge</th>
-              <th className="border border-gray-300 p-2 w-30">
-                Return to Duty
-              </th>
-              <th className="border border-gray-300 p-2 w-30">Bill Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data1.length > 0 ? (
-              data1.map((data, index) => (
-                <tr
-                  key={index}
-                  onClick={() => {
-                    setFormData({
-                      date: data.date || "",
-                      Name: data.Name || "",
-                      Department: data.Department || "",
-                      category: data.category || "",
-                      Designation: data.Designation || "",
-                      age: data.age || "",
-                      injury: data.injury || "",
-                      Treatment: data.Treatment || "",
-                      Refer_to: data.Refer_to || "",
-                      Admit: data.Admit || "",
-                      FollowUpDate: data.FollowUp_Date || "",
-                      Discharge: data.Discharge || "",
-                      Return_to_Duty: data.Return_to_Duty || "",
-                      BillAmount: data.BillAmount || "",
-                    });
-                    setActiveIndex(index);
-                    console.log("Selected data:", data);
-                  }}
-                  className={activeIndex === index ? "bg-gray-300" : ""}
-                >
-                  <td className="border border-gray-300 p-2 w-10 hover:cursor-pointer">
-                    {index + 1}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
-                    {data.date
-                      ? new Date(data.date).toLocaleDateString("en-GB")
-                      : ""}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
-                    {data.Name}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
-                    {data.Department}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
-                    {data.category}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
-                    {data.Designation}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
-                    {data.age}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
-                    {data.injury}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
-                    {data.Treatment}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
-                    {data.Refer_to}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
-                    {data.Admit}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
-                    {data.FollowUp_Date
-                      ? new Date(data.FollowUp_Date).toLocaleDateString("en-GB")
-                      : ""}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
-                    {data.Discharge
-                      ? new Date(data.Discharge).toLocaleDateString("en-GB")
-                      : ""}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
-                    {data.Return_to_Duty
-                      ? new Date(data.Return_to_Duty).toLocaleDateString(
-                          "en-GB"
-                        )
-                      : ""}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
-                    {data.BillAmount}
+          <table className=" w-full border-collapse border border-gray-300 ">
+            <thead className=" bg-gray-200 sticky top-0">
+              <tr>
+                <th className="border border-gray-300 p-2 w-10">Sr.No</th>
+                <th className="border border-gray-300 p-2 w-30">Date</th>
+                <th className="border border-gray-300 p-2 w-30">Name</th>
+                <th className="border border-gray-300 p-2 w-30">Department</th>
+                <th className="border border-gray-300 p-2 w-30">Category</th>
+                <th className="border border-gray-300 p-2 w-30 ">
+                  ID/Contract
+                </th>
+                <th className="border border-gray-300 p-2 w-30">Age</th>
+                <th className="border border-gray-300 p-2 w-30 ">Injury</th>
+                <th className="border border-gray-300 p-2 w-30 ">Treatment</th>
+                <th className="border border-gray-300 p-2 w-30">Refer-To</th>
+                <th className="border border-gray-300 p-2 w-30">Admit</th>
+                <th className="border border-gray-300 p-2 w-30">Follow-up</th>
+                <th className="border border-gray-300 p-2 w-30">Discharge</th>
+                <th className="border border-gray-300 p-2 w-30">
+                  Return to Duty
+                </th>
+                <th className="border border-gray-300 p-2 w-30">Bill Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {injuries.length > 0 ? (
+                injuries.map((data, index) => (
+                  <tr
+                    key={index}
+                    onClick={() => {
+                      setFormData({
+                        date: data.date || "",
+                        Name: data.Name || "",
+                        Department: data.Department || "",
+                        category: data.category || "",
+                        Designation: data.Designation || "",
+                        age: data.age || "",
+                        injury: data.injury || "",
+                        Treatment: data.Treatment || "",
+                        Refer_to: data.Refer_to || "",
+                        Admit: data.Admit || "",
+                        FollowUpDate: data.FollowUp_Date || "",
+                        Discharge: data.Discharge || "",
+                        Return_to_Duty: data.Return_to_Duty || "",
+                        BillAmount: data.BillAmount || "",
+                      });
+                      setActiveIndex(index);
+                      console.log("Selected data:", data);
+                    }}
+                    className={activeIndex === index ? "bg-gray-300" : ""}
+                  >
+                    <td className="border border-gray-300 p-2 w-10 hover:cursor-pointer">
+                      {index + 1}
+                    </td>
+                    <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
+                      {data.date
+                        ? new Date(data.date).toLocaleDateString("en-GB")
+                        : ""}
+                    </td>
+                    <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
+                      {data.Name}
+                    </td>
+                    <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
+                      {data.Department}
+                    </td>
+                    <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
+                      {data.category}
+                    </td>
+                    <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
+                      {data.Designation}
+                    </td>
+                    <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
+                      {data.age}
+                    </td>
+                    <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
+                      {data.injury}
+                    </td>
+                    <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
+                      {data.Treatment}
+                    </td>
+                    <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
+                      {data.Refer_to}
+                    </td>
+                    <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
+                      {data.Admit}
+                    </td>
+                    <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
+                      {data.FollowUp_Date
+                        ? new Date(data.FollowUp_Date).toLocaleDateString(
+                            "en-GB"
+                          )
+                        : ""}
+                    </td>
+                    <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
+                      {data.Discharge
+                        ? new Date(data.Discharge).toLocaleDateString("en-GB")
+                        : ""}
+                    </td>
+                    <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
+                      {data.Return_to_Duty
+                        ? new Date(data.Return_to_Duty).toLocaleDateString(
+                            "en-GB"
+                          )
+                        : ""}
+                    </td>
+                    <td className="border border-gray-300 p-2 w-30 hover:cursor-pointer">
+                      {data.BillAmount}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={15} className="text-center text-red-500">
+                    No data available
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={15} className="text-center text-red-500">
-                  No data available
-                </td>
-              </tr>
-            )}
-          </tbody>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   );
 }
-
-export default Injury;
+ export default Injury;
