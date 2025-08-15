@@ -23,7 +23,6 @@ import { fetchInjuriesAsync } from "../feture/InjurySlice";
 
 function InjuryReport() {
   const [data1, setdata1] = useState([]);
-  const [activeIndex, setActiveIndex] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchValue, setSearchValue] = useState("");
   const [showGraph, setShowGraph] = useState(false);
@@ -35,6 +34,7 @@ function InjuryReport() {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
   const { injuries } = useSelector((state) => state.injury);
+  const [modelmode, setModalMode] = useState("edit");
 
   const [graphData, setGraphData] = useState({
     contractVsEmployee: [],
@@ -218,28 +218,14 @@ function InjuryReport() {
     });
     setdata1(filteredData);
   };
-
-  // const fetchData = async () => {
-  //   setLoading(true); // Start loading
-  //   const token = localStorage.getItem("token");
-  //   axios
-  //     .get(`${import.meta.env.VITE_BASE_URL}/api/v1/injurydata/injurydata`, {
-  //       headers: {
-  //         "Content-Type": "multipart/form-data",
-  //         Authorization: `Bearer ${token}`,
-  //         "x-origin": origin,
-  //       },
-  //     })
-  //     .then((res) => setdata1(res.data.entries))
-  //     .catch((error) => console.error("Error fetching data:", error));
-  // };
   
- 
-  const fetchData = async () => {
-
-    dispatch(fetchInjuriesAsync({ origin }));
-    setdata1(injuries);
-  }
+  const fetchData = async () => { 
+    const result = await dispatch(fetchInjuriesAsync({origin}));
+    if (fetchInjuriesAsync.fulfilled.match(result)) {
+      setdata1(result.payload);
+      setLoading(false); 
+    }
+  };
   const logouthandler = async () => {
     localStorage.removeItem("token");
     localStorage.removeItem("origin");
@@ -251,9 +237,10 @@ function InjuryReport() {
     const token = localStorage.getItem("token");
     if (token) {
       fetchData();
-      
     }
   }, []);
+
+ 
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -312,8 +299,27 @@ function InjuryReport() {
     }
   };
 
+ 
+  const handleEditClick = () => {
+    if (!selectedRowKeys || selectedRowKeys.length === 0) {
+      toast.error("Please select a single entry to edit.");
+    } else if (selectedRowKeys.length > 1) {
+      toast.error("Please select only one entry to edit.");
+    } else {
+      setShowModalForm(true);
+      setModalMode("edit");
+      console.log("Selected data for edit:", selectedData);
+    }
+    ;
+  };
 
-return loading ? (
+  const handleDeleteClick = (record) => {
+    setSelectedData(record);
+    setModalMode("delete");
+    setShowModalForm(true);
+  };
+
+  return loading ? (
     <div className="flex justify-center items-center h-screen">
       <div className="loader"></div>
     </div>
@@ -365,24 +371,13 @@ return loading ? (
           >
             Clear
           </button>
-          <button
-            className="bg-green-400 w-35  py-2 mb-2 rounded-lg hover:bg-green-600 hover:cursor-pointer"
-            onClick={() => {
-              if (!selectedRowKeys || selectedRowKeys.length === 0) {
-                toast.error("Please select a single entry to edit.");
-              } else if (selectedRowKeys.length > 1) {
-                toast.error("Please select only one entry to edit.");
-              } else {
-                setShowModalForm(true);
-              }
-            }}
-          >
-            {" "}
-            change request
-          </button>
+
           {showModalForm && (
             <Modalform
+              mode={modelmode}
               data={selectedData}
+              length={selectedRowKeys}
+              model = "injuries"
               onClose={() => setShowModalForm(false)}
             />
           )}
@@ -417,98 +412,7 @@ return loading ? (
       </div>
       <div className="h-full w-full mt-2 pb-20">
         <div className="ml-4 ">
-          {/* <table className="w-[90%] border-collapse border border-gray-300">
-            <thead className="bg-gray-200 sticky top-0">
-              <tr>
-                <th className="border border-gray-300 p-2 w-30">Sr.No</th>
-                <th className="border border-gray-300 p-2 w-30">Date</th>
-                <th className="border border-gray-300 p-2 w-30">Name</th>
-                <th className="border border-gray-300 p-2 w-30">Department</th>
-                <th className="border border-gray-300 p-2 w-30">Category</th>
-                <th className="border border-gray-300 p-2 w-30 ">
-                  Designation
-                </th>
-                <th className="border border-gray-300 p-2 w-30">Age</th>
-                <th className="border border-gray-300 p-2 w-30 ">Injury</th>
-                <th className="border border-gray-300 p-2 w-30 ">Treatment</th>
-                <th className="border border-gray-300 p-2 w-30">Refer-To</th>
-                <th className="border border-gray-300 p-2 w-30">Admit</th>
-                <th className="border border-gray-300 p-2 w-30">Follow-up</th>
-                <th className="border border-gray-300 p-2 w-30">Discharge</th>
-                <th className="border border-gray-300 p-2 w-30">
-                  Return to Duty
-                </th>
-                <th className="border border-gray-300 p-2 w-30">Bill Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data1.map((data, index) => (
-                <tr
-                  key={index}
-                  onClick={() => {
-                    setActiveIndex(index);
-                  }}
-                  className={activeIndex === index ? "bg-gray-300" : ""}
-                >
-                  <td className="border border-gray-300 p-2 w-30">
-                    {index + 1}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30">
-                    {data.date
-                      ? new Date(data.date).toLocaleDateString("en-GB")
-                      : ""}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30">
-                    {data.Name}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30">
-                    {data.Department}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30">
-                    {data.category}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30">
-                    {data.Designation}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30">
-                    {data.age}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30">
-                    {data.injury}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30">
-                    {data.Treatment}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30">
-                    {data.Refer_to}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30">
-                    {data.Admit}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30">
-                    {data.FollowUp_Date
-                      ? new Date(data.FollowUp_Date).toLocaleDateString("en-GB")
-                      : ""}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30">
-                    {data.Discharge
-                      ? new Date(data.Discharge).toLocaleDateString("en-GB")
-                      : ""}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30">
-                    {data.Return_to_Duty
-                      ? new Date(data.Return_to_Duty).toLocaleDateString(
-                          "en-GB"
-                        )
-                      : ""}
-                  </td>
-                  <td className="border border-gray-300 p-2 w-30">
-                    {data.BillAmount}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table> */}
+          <Divider orientation="left"></Divider>
           <Table
             rowSelection={rowSelection}
             columns={columns}
@@ -532,43 +436,23 @@ return loading ? (
           <div className="flex justify-center items-center gap-4">
             <button
               className={
-                activeIndex !== null
-                  ? "bg-red-400 text-black rounded-lg px-3 py-1.5 hover:bg-red-600 cursor-pointer"
+                selectedRowKeys.length >= 1
+                  ? "bg-red-400 text-black rounded-lg px-8 py-1.5 hover:bg-red-600 cursor-pointer"
                   : "hidden"
               }
+              onClick={handleDeleteClick}
             >
-              Delete
+              Delete ({selectedRowKeys.length})
             </button>
             <button
               className={
-                activeIndex !== null
+                selectedRowKeys.length >= 1
                   ? "bg-green-400 text-black rounded-lg px-5 py-1.5 hover:bg-green-600 cursor-pointer"
                   : "hidden"
               }
-              onClick={() => {
-                const selectedData = injuries[activeIndex];
-                if (selectedData) {
-                  const {
-                    id,
-                    date,
-                    Name,
-                    contractorName,
-                    category,
-                    Designation,
-                    age,
-                    purpose,
-                    Treatment,
-                  } = selectedData;
-                  const formattedDate = new Date(date).toLocaleDateString(
-                    "en-GB"
-                  );
-                  console.log(
-                    `ID: ${id}, Date: ${formattedDate}, Workmen Name: ${Name}, Contractor Name: ${contractorName}, Age: ${age}, category: ${category}, Designation : ${Designation}, purpose: ${purpose}, Treatment: ${Treatment}`
-                  );
-                }
-              }}
+              onClick={handleEditClick}
             >
-              Edit
+              Edit Request
             </button>
           </div>
         </nav>
