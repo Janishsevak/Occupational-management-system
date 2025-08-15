@@ -11,6 +11,7 @@ import injurydata from './routes/injury.router.js'
 import path from "path";
 import { connectAllUserDBs } from './models/dbconnection.js';
 import ftemedicalrouter from './routes/FTEmedical.router.js';
+import request from './routes/request.router.js';
 // import { sequelize } from './database/sqldb.js'; // to use sequelize.sync()
 
 
@@ -46,6 +47,7 @@ app.use('/api/v1/oclmedical', oclmedicalroutes); // Use the oclmedical routes
 app.use('/api/v1/dailymedical', dailymedicalroutes); // Use the dailymedical route
 app.use('/api/v1/injurydata', injurydata); // Use the dailymedical route
 app.use('/api/v1/FTEmedical', ftemedicalrouter); // Use the FTEmedical routes
+app.use('/api/v1/request', request); // Use the request routes
 
 
 // app.use(express.static(path.join(__dirname,"client", "dist")))

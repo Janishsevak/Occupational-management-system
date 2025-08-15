@@ -121,4 +121,6 @@ export const defineInjuryModel = (sequelize) => {
     timestamps: true,
     tableName: 'injuries',
   });
+
 };
+
