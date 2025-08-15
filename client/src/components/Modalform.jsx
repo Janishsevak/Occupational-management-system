@@ -1,48 +1,44 @@
-import React, { use, useEffect, useState } from "react";
-import {
-  Modal,
-  Form,
-  Input,
-  Button,
-  DatePicker,
-  Select,
-  InputNumber,
-} from "antd";
+import React, { useEffect, useState } from "react";
+import { Modal, Form, Input, DatePicker, Select } from "antd";
 import TypedInputNumber from "antd/es/input-number";
 import dayjs from "dayjs";
+import { useDispatch } from "react-redux";
+import { raiseRequestAsync } from "../feture/RequestSlice";
 
 const Modalform = (props) => {
-  const [form] = Form.useForm();
+  const [injuryform] = Form.useForm();
+  const [deleteForm] = Form.useForm();
   const [isModalOpen, setIsModalOpen] = useState(true);
-  const [formData, setFormData] = useState({
-    date: "",
-    Name: "",
-    Department: "",
-    age: "",
-    category: "",
-    Designation: "",
-    injury: "",
-    Treatment: "",
-    Refer_to: "",
-    Admit: "",
-    FollowUpDate: "",
-    Discharge: "",
-    Return_to_Duty: "",
-    BillAmount: "",
-  });
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
 
-  const showModal = () => {
-    setIsModalOpen(true);
-  };
   const onClose = () => {
     setIsModalOpen(false);
-    form.resetFields();
-    if (props.onClose) props.onClose();
+    injuryform.resetFields();
+    deleteForm.resetFields();
+    props.onClose?.();
+  };
+  const origin = localStorage.getItem("origin")
+  
+
+  const onFinishDelete = async (values) => {
+    const result = await dispatch(raiseRequestAsync({
+      origin,
+      model:props.model,
+      recordId:[props.length],
+      reason:values.reason}));
+      console.log("response data",result)
+    onClose();
   };
 
+   useEffect(() => {
+    deleteForm.setFieldsValue({
+      totalDelete: props.length?.length || 0
+    });
+  }, [props.data, deleteForm]);
+
   useEffect(() => {
-    if (props.data) {
+    if (props.data && props.mode === "edit") {
       const dataWithDayjs = {
         ...props.data,
         date: props.data.date ? dayjs(props.data.date) : null,
@@ -54,12 +50,13 @@ const Modalform = (props) => {
           ? dayjs(props.data.Return_to_Duty)
           : null,
       };
-      form.setFieldsValue(dataWithDayjs);
-      console.log("Form data set from props:", dataWithDayjs);
+      injuryform.setFieldsValue(dataWithDayjs);
     }
-  }, [props.data, form]);
-  const category = Form.useWatch("category", form);
-  const onFinish = (values) => {
+  }, [props.data, props.mode, injuryform]);
+
+  const category = Form.useWatch("category", injuryform);
+
+  const onFinishEdit = (values) => {
     setLoading(true);
     const formattedValues = {
       ...values,
@@ -74,30 +71,35 @@ const Modalform = (props) => {
         ? values.Return_to_Duty.format("YYYY-MM-DD")
         : null,
     };
-    console.log("Form submitted with values:", formattedValues);
+    console.log("Edit Form Submitted:", formattedValues);
     setLoading(false);
     onClose();
   };
+
+ 
+
   return (
-    <>
-      <Modal
-        open={isModalOpen}
-        onCancel={onClose}
-        onOk={() => form.submit()}
-        title="Injury Form"
-        destroyOnHidden
-        style={{ top: 0 }}
-        okText="Submit"
-      >
-        <div style={{ maxHeight: "80vh", overflowY: "auto" }}>
+    <Modal
+      open={isModalOpen}
+      onCancel={onClose}
+      onOk={() => {
+        if (props.mode === "edit") {
+          injuryform.submit();
+        } else {
+          deleteForm.submit();
+        }
+      }}
+      title={props.mode === "edit" ? "Edit Injury" : "Delete Request"}
+      okText="Submit"
+    >
+      {props.mode === "edit" ? (
         <Form
-          form={form}
+          form={injuryform}
           name="injury"
           labelCol={{ span: 8 }}
           wrapperCol={{ span: 16 }}
           style={{ maxWidth: 600 }}
-          onFinish={onFinish}
-          //   onFinishFailed={onFinishFailed}
+          onFinish={onFinishEdit}
           autoComplete="off"
         >
           <Form.Item label="Date" name="date" rules={[{ required: true }]}>
@@ -123,6 +125,7 @@ const Modalform = (props) => {
               <Select.Option value="Employee">Employee</Select.Option>
             </Select>
           </Form.Item>
+
           {category === "Employee" ? (
             <Form.Item
               label="Employee Code"
@@ -151,6 +154,7 @@ const Modalform = (props) => {
               </Select>
             </Form.Item>
           ) : null}
+
           <Form.Item label="Age" name="age" rules={[{ required: true }]}>
             <TypedInputNumber placeholder="Enter Age" style={{ width: 192 }} />
           </Form.Item>
@@ -162,22 +166,13 @@ const Modalform = (props) => {
             name="Treatment"
             rules={[{ required: true }]}
           >
-            <Input
-              placeholder="Enter Treatment Details"
-              style={{ width: 192 }}
-            />
+            <Input placeholder="Enter Treatment Details" style={{ width: 192 }} />
           </Form.Item>
           <Form.Item label="Refer To" name="Refer_to">
-            <Input
-              placeholder="Enter Treatment Details"
-              style={{ width: 192 }}
-            />
+            <Input placeholder="Enter Treatment Details" style={{ width: 192 }} />
           </Form.Item>
           <Form.Item label="Admit" name="Admit">
-            <Input
-              placeholder="Enter Treatment Details"
-              style={{ width: 192 }}
-            />
+            <Input placeholder="Enter Treatment Details" style={{ width: 192 }} />
           </Form.Item>
           <Form.Item label="Follow-up Date" name="FollowUpDate">
             <DatePicker style={{ width: 192 }} />
@@ -189,15 +184,40 @@ const Modalform = (props) => {
             <DatePicker style={{ width: 192 }} />
           </Form.Item>
           <Form.Item label="Bill Amount" name="BillAmount">
-            <TypedInputNumber
-              placeholder="Enter Bill Amount"
+            <TypedInputNumber placeholder="Enter Bill Amount" style={{ width: 192 }} />
+          </Form.Item>
+        </Form>
+      ) : (
+        <Form
+          form={deleteForm}
+          name="delete"
+          labelCol={{ span: 8 }}
+          wrapperCol={{ span: 16 }}
+          style={{ maxWidth: 600 }}
+          onFinish={onFinishDelete}
+        >
+          <Form.Item
+            label="Total data for delete"
+            name="totalDelete"
+          >
+            <TypedInputNumber  style={{ width: 192 }} readOnly />
+          </Form.Item>
+
+          <Form.Item
+            label="Reason for Deletion"
+            name="reason"
+            rules={[{ required: true, message: "Please enter a reason" }]}
+          >
+
+            <Input.TextArea
+              placeholder="Enter reason for deletion"
+              rows={4}
               style={{ width: 192 }}
             />
           </Form.Item>
         </Form>
-        </div>
-      </Modal>
-    </>
+      )}
+    </Modal>
   );
 };
 
