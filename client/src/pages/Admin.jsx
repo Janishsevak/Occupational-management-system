@@ -8,14 +8,13 @@ import { useNavigate } from "react-router-dom";
 import { MdLogout } from "react-icons/md";
 import { FaUserPlus } from "react-icons/fa6";
 import { SlHome } from "react-icons/sl";
-import { Menu, } from "antd";
+import { Menu } from "antd";
 import { BsKey } from "react-icons/bs";
 import Graph from "../components/admin/Ankleshwar/Graph";
 import Injuryrecord from "../components/admin/Ankleshwar/Injuryrecord";
 import Oclmedical from "../components/admin/Ankleshwar/Oclmedical";
 import FTEmedical from "../components/admin/Ankleshwar/FTEmedical";
 import DailyOPD from "../components/admin/Ankleshwar/DailyOPD";
-
 
 const items = [
   {
@@ -25,7 +24,6 @@ const items = [
     children: [
       { key: "16", label: "CreateUser" },
       { key: "17", label: "ChangePassword" },
-      
     ],
   },
 
@@ -90,7 +88,7 @@ function Admin() {
       case "4":
         return <FTEmedical />;
       case "5":
-        return <DailyOPD/>;
+        return <DailyOPD />;
       // case "dahej":
       //   return <Dahej />;
       // case "kurkumbh":
@@ -105,107 +103,56 @@ function Admin() {
     localStorage.removeItem("user");
     navigate("/");
   };
-return (
-    <div className=" relative h-screen w-full bg-white">
-      <div>
-        <img
-          className="mx-auto pt-4 w-50 ml-220 "
-          src="./photo/logo_alivus.webp"
-          alt="Logo"
-        />
-      </div>
-      <div className=" absolute w-[20%] top-0 h-screen bg-white">
-        <h1 className=" pl-10 font-semibold text-2xl text-blue-500 p-2 ">
-          Admin Login
-        </h1>
-        <div className="p-2 h-[88%] bg-gray-50  flex flex-col">
-          <ul className="space-y-4 ml-4">
-            {/* <div>
-              <li
-                className={`hover:bg-gray-300 hover:text-black cursor-pointer px-2 py-2 rounded text-lg ${
-                  activeComponent === "createuser"
-                    ? "bg-gray-300 text-black "
-                    : ""
-                }`}
-                onClick={() => setActiveComponent("createuser")}
-              >
-                <FaUserPlus className="inline-block mr-2" />
-                Create user
-              </li>
-            </div> */}
-            {/* <div>
-              <li
-                className={`hover:bg-gray-300 hover:text-black cursor-pointer px-2 py-2 rounded text-lg ${
-                  activeComponent === "changepassword"
-                    ? "bg-gray-300 text-black"
-                    : ""
-                }`}
-                onClick={() => setActiveComponent("changepassword")}
-              >
-                <BsKey className="inline-block mr-2" />
-                Change Password
-              </li>
-            </div> */}
-            {/* <div>
-              <li
-              className={`hover:bg-gray-300 hover:text-black cursor-pointer px-2 py-2 rounded text-lg ${activeComponent === "ankleshwar" ? "bg-gray-300 text-black" : ""}`}
-              onClick={() => setActiveComponent("ankleshwar")}
-              >
-                <SlHome  className="inline-block mr-2" />
-              Ankleshwar
-             </li>
-            </div> */}
-            <div className="w-full"> 
-              <Menu
-              onClick={onClick} 
-              items={items}
-              style={{
-                width: 305,
-                fontSize: "1.125rem", // same as Tailwind text-lg
-                lineHeight: "4rem", // match Change Password height
-                backgroundColor: "#f3f4f6", // Tailwind gray-50    
-                hover: {
-                  backgroundColor: "#d1d5db"},
-                   marginLeft: "0rem",
+  return (
+    <div className="relative h-screen w-full bg-white flex">
+      {/* Sidebar */}
+      <div className="w-[20%] h-screen bg-white flex flex-col">
+        
 
-              }}  
-              defaultOpenKeys={["sub1"]}
-              selectedKeys={[activeComponent]}
-              mode="inline"
-             
-              />
-            </div>
-            {/* <div>
-              <li
-              className={`hover:bg-gray-300 hover:text-black cursor-pointer px-2 py-2 rounded text-lg ${activeComponent === "dahej" ? "bg-gray-300 text-black" : ""}`}
-              onClick={() => setActiveComponent("dahej")}
-              >
-                <SlHome  className="inline-block mr-2" />
-              Dahej
-            </li>
-            </div>
-             <div>
-              <li
-              className={`hover:bg-gray-300 hover:text-black cursor-pointer px-2 py-2 rounded text-lg ${activeComponent === "kurkumbh" ? "bg-gray-300 text-black" : ""}`}
-              onClick={() => setActiveComponent("kurkumbh")}
-              >
-                <SlHome    className="inline-block mr-2" />
-              Kurkumbh
-              </li>
-             </div> */}
-          </ul>
-          <div className="flex justify-center mt-auto gap-1">
-            <button
-              onClick={logouthandler}
-              className=" bg-red-300 hover:bg-red-400 hover:cursor-pointer flex items-center justify-center  rounded-lg px-3 py-2 font-bold w-60 gap-2 "
-            >
-              <MdLogout className="text-3xl" />
-              Logout
-            </button>
-          </div>
+        <h1 className="pl-6 font-semibold text-2xl text-blue-500 p-2">
+          Admin Panel
+        </h1>
+
+        <div className="p-2 flex-1 bg-white flex flex-col">
+          <Menu
+            onClick={onClick}
+            items={items}
+            style={{
+              width: "100%",
+              fontSize: "1.125rem",
+              lineHeight: "4rem",
+              backgroundColor:"white",
+            }}
+            defaultOpenKeys={["sub1"]}
+            selectedKeys={[activeComponent]}
+            mode="inline"
+          />
+        </div>
+
+        {/* Logout Button at bottom */}
+        <div className="flex justify-center p-4">
+          <button
+            onClick={logouthandler}
+            className="bg-red-300 hover:bg-red-400 flex items-center justify-center rounded-lg px-3 py-2 font-bold w-60 gap-2"
+          >
+            <MdLogout className="text-3xl" />
+            Logout
+          </button>
         </div>
       </div>
-      <div className="absolute w-[80%] left-85 h-screen ">
+
+      {/* Main Content */}
+      <div>
+        
+      </div>
+      <div className="w-[80%] h-screen overflow-y-auto bg-gray-100">
+        <div className="flex flex-col items-center py-2">
+          <img
+            className="w-40" // ✅ controlled width
+            src="./photo/logo_alivus.webp"
+            alt="Logo"
+          />
+        </div>
         {renderComponent()}
       </div>
     </div>

@@ -35,7 +35,7 @@ function Userlogin() {
       origin,
     };
     try {
-      console.log("Submitting:", { username, password, origin });
+      
       const url =
         login === "admin"
           ? `${import.meta.env.VITE_BASE_URL}/api/v1/admin/adminlogin`
@@ -55,7 +55,6 @@ function Userlogin() {
         localStorage.setItem("origin", origin);
         localStorage.setItem("user", JSON.stringify(response.data.admin));
         setuserprofile(user);
-        console.log("User profile set:", user);
 
         if (login === "admin") {
           navigate("/admin"); // or whatever route admin should go to
@@ -127,11 +126,12 @@ function Userlogin() {
                 Username:
               </label>
               <input
-                className="flex-1 p-2 bg-white rounded-lg text-md border border-gray-300"
+                className="w-full flex-1 p-2 bg-white rounded-lg text-md border border-gray-300"
                 type="text"
                 id="username"
                 value={username}
                 onChange={(e) => setusername(e.target.value)}
+                placeholder="Username"
               />
             </div>
 
@@ -142,7 +142,7 @@ function Userlogin() {
               </label>
               <div className="relative flex-1">
                 <input
-                  className="w-full p-2 pr-10 bg-white rounded-lg text-md border border-gray-300"
+                  className="w-full p-2 bg-white rounded-lg text-md border border-gray-300"
                   type={show ? "text" : "password"}
                   required
                   value={password}
@@ -151,7 +151,7 @@ function Userlogin() {
                 />
                 <span
                   onClick={() => setshow(!show)}
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 p-0 text-gray-600 cursor-pointer"
+                  className="absolute inset-y-2 right-2 flex items-center text-gray-600 hover:cursor-pointer"
                 >
                   {show ? <IoMdEyeOff size={20} /> : <IoMdEye size={20} />}
                 </span>

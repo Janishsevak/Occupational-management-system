@@ -17,9 +17,18 @@ import {
 import { useNavigate } from "react-router-dom";
 import { Divider, Radio, Table } from "antd";
 import Modalform from "./Modalform";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchInjuriesAsync } from "../feture/InjurySlice";
-
+// import { setSelectedData } from "../feature/RequestSlice";
+import {
+  useAddInjuryMutation,
+  useDeleteInjuryMutation,
+  useFetchInjuriesQuery,
+  useUpdateInjuryMutation,
+} from "../feature/injuryapi";
+import { useMemo } from "react";
+import React from "react";
+import { useDispatch } from "react-redux";
+import { setSelectedData } from "../feature/localstateSlice";
+// import { fetchInjuriesAsync } from "../feture/InjurySlice";
 
 function InjuryReport() {
   const [data1, setdata1] = useState([]);
@@ -30,11 +39,12 @@ function InjuryReport() {
   const navigate = useNavigate();
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [showModalForm, setShowModalForm] = useState(false);
-  const [selectedData, setSelectedData] = useState([]);
-  const dispatch = useDispatch();
+  const [selectedData1, setSelectedData1] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { injuries } = useSelector((state) => state.injury);
   const [modelmode, setModalMode] = useState("edit");
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [alldata, setAllData] = useState([]);
+  const dispatch = useDispatch();
 
   const [graphData, setGraphData] = useState({
     contractVsEmployee: [],
@@ -95,8 +105,8 @@ function InjuryReport() {
     },
     {
       title: "Refer-To",
-      dataIndex: "Refer_to",
-      key: "Refer_to",
+      dataIndex: "Refer_To",
+      key: "Refer_To",
     },
     {
       title: "Admit",
@@ -142,18 +152,27 @@ function InjuryReport() {
     fileInputRef.current.click();
   };
 
-  const onSelectChange = (newSelectedRowKeys) => {
+  const {
+    data: injuries = [],
+    isloading,
+    error,
+  } = useFetchInjuriesQuery(origin);
+
+  const [addInjury] = useAddInjuryMutation();
+  const [updateInjury] = useUpdateInjuryMutation();
+  const [deleteInjury] = useDeleteInjuryMutation();
+
+  const onSelectChange = (newSelectedRowKeys, selectedRowsData) => {
     console.log("selectedRowKeys changed: ", newSelectedRowKeys);
     setSelectedRowKeys(newSelectedRowKeys);
-    if (newSelectedRowKeys.length > 0) {
-      const selectedData = data1.find(
-        (item) => item.id === newSelectedRowKeys[0]
-      );
-      setSelectedData(selectedData);
-      console.log("Selected data:", selectedData);
-    } else {
-      setSelectedData(null);
-    }
+    setSelectedRows(selectedRowsData);
+    console.log("Selected rows data:", selectedRowsData);
+    dispatch(setSelectedData(selectedRowsData));
+
+    console.log("Selected rows:", selectedRows);
+    const nameArray = selectedRows?.map((item) => item.Name) || [];
+    console.log(nameArray, "data");
+    setSelectedData1(nameArray);
   };
   const rowSelection = {
     selectedRowKeys,
@@ -193,39 +212,53 @@ function InjuryReport() {
     }
   };
 
-  const searchhandler = () => {
-    if (searchTerm === "" || searchValue === "") {
-      alert("Please select a search term and enter a value.");
-      return;
-    }
-    const filteredData = data1.filter((item) => {
+  const filteredData = React.useMemo(() => {
+    if (!searchTerm || !searchValue) return injuries;
+
+    return injuries.filter((item) => {
       if (searchTerm === "Contract") {
         return (
           item.category === "Contract" &&
-          item.Designation &&
-          item.Designation.toLowerCase().includes(searchValue.toLowerCase())
+          item.Designation?.toLowerCase().includes(searchValue.toLowerCase())
         );
       } else if (searchTerm === "Name") {
-        return item.Name.toLowerCase().includes(searchValue.toLowerCase());
+        return item.Name?.toLowerCase().includes(searchValue.toLowerCase());
       } else if (searchTerm === "Date") {
         return item.date === searchValue;
-      } else if (searchTerm === "Employee")
+      } else if (searchTerm === "Employee") {
         return (
           item.category !== "Contract" &&
-          item.Designation &&
-          item.Designation.toString() === searchValue.toString()
+          item.Designation?.toString() === searchValue.toString()
         );
+      }
+      return true;
     });
-    setdata1(filteredData);
+  }, [injuries, searchTerm, searchValue]);
+
+  const clearHandler = () => {
+    setSearchTerm("");
+    setSearchValue("");
+    setdata1(alldata); // restore original
   };
-  
-  const fetchData = async () => { 
-    const result = await dispatch(fetchInjuriesAsync({origin}));
-    if (fetchInjuriesAsync.fulfilled.match(result)) {
-      setdata1(result.payload);
-      setLoading(false); 
-    }
-  };
+
+  // const fetchData = async () => {
+  //   try {
+  //     const resultAction = await dispatch(fetchInjuriesAsync({ origin }));
+
+  //     if (fetchInjuriesAsync.fulfilled.match(resultAction)) {
+  //       const data = resultAction.payload; // API response
+  //       console.log("Fetched data:", data);
+
+  //       setdata1(data);   // show in table
+  //       setAllData(data); // backup for search
+  //     } else {
+  //       console.error("Failed to fetch:", resultAction.error);
+  //     }
+  //   } catch (err) {
+  //     console.error("Error in fetchData:", err);
+  //   }
+  // };
+
   const logouthandler = async () => {
     localStorage.removeItem("token");
     localStorage.removeItem("origin");
@@ -233,14 +266,12 @@ function InjuryReport() {
     navigate("/");
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      fetchData();
-    }
-  }, []);
-
- 
+  // useEffect(() => {
+  //   const token = localStorage.getItem("token");
+  //   if (token) {
+  //     fetchData();
+  //   }
+  // }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -299,7 +330,6 @@ function InjuryReport() {
     }
   };
 
- 
   const handleEditClick = () => {
     if (!selectedRowKeys || selectedRowKeys.length === 0) {
       toast.error("Please select a single entry to edit.");
@@ -308,17 +338,18 @@ function InjuryReport() {
     } else {
       setShowModalForm(true);
       setModalMode("edit");
-      console.log("Selected data for edit:", selectedData);
+      console.log("Selected data for edit:", selectedData1);
     }
-    ;
+    return;
   };
 
-  const handleDeleteClick = (record) => {
-    setSelectedData(record);
+  const handleDeleteClick = () => {
+    console.log("Selected rows for delete:", selectedRows);
     setModalMode("delete");
     setShowModalForm(true);
+    setSelectedRowKeys([]);
   };
-
+  console.log("data1", data1);
   return loading ? (
     <div className="flex justify-center items-center h-screen">
       <div className="loader"></div>
@@ -360,24 +391,24 @@ function InjuryReport() {
             }
           />
           <button
-            onClick={searchhandler}
+            onClick={filteredData}
             className="bg-blue-400 w-23 py-2 mb-2 rounded-lg hover:bg-blue-600 hover:cursor-pointer"
           >
             Search
           </button>
           <button
             className="bg-orange-300 w-23  py-2 mb-2 rounded-lg hover:bg-orange-500 hover:cursor-pointer"
-            onClick={() => fetchData()}
+            onClick={clearHandler}
           >
             Clear
           </button>
 
           {showModalForm && (
             <Modalform
-              mode={modelmode}
-              data={selectedData}
               length={selectedRowKeys}
-              model = "injuries"
+              mode={modelmode}
+              model="injuries"
+              editdata={selectedRows}
               onClose={() => setShowModalForm(false)}
             />
           )}
@@ -413,10 +444,11 @@ function InjuryReport() {
       <div className="h-full w-full mt-2 pb-20">
         <div className="ml-4 ">
           <Divider orientation="left"></Divider>
+
           <Table
             rowSelection={rowSelection}
             columns={columns}
-            dataSource={data1}
+            dataSource={filteredData}
             rowKey="id"
             pagination={{
               current: pagination.current,
@@ -425,13 +457,19 @@ function InjuryReport() {
               onChange: (page, pageSize) =>
                 setPagination({ current: page, pageSize }),
             }}
+            rowClassName={(record) => {
+              if (record.requestStatus === "pending") {
+                return "row-pending"; // custom class for pending rows
+              }
+              return "";
+            }}
           />
         </div>
       </div>
       <div>
         <nav className="fixed bottom-0 left-0 right-0 bg-gray-100 shadow-lg p-4 flex items-center z-50">
           <div className="flex items-center w-[50%]">
-            <span className="mr-2">Total data: {injuries.length}</span>
+            <span className="mr-2">Total data: {filteredData.length}</span>
           </div>
           <div className="flex justify-center items-center gap-4">
             <button

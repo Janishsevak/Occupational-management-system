@@ -1,11 +1,8 @@
-import { or } from "sequelize";
+import { or, where, Op } from "sequelize";
 import { getDbByOrigin } from "../models/dbconnection.js";
 import { defineDeleteRequestModel } from "../models/request.model.js";
-import { defineFTEMedicalModel } from "../models/FTEmedical.model.js";
-import { defineInjuryModel } from "../models/injury.model.js";
-import { defineOclMedicalModel } from "../models/oclmedical.js";
-import { defineDailyMedicalModel } from "../models/dailymedical.js";
 import { VALID_MODELS, getModelByName } from "./model.map.js";
+import { defineEditRequestModel } from "../models/editrequest.model.js";
 
 export const requestDelete = async (req, res) => {
   const origin = req.user.origin || req.headers["x-origin"];
@@ -14,7 +11,6 @@ export const requestDelete = async (req, res) => {
   if (!origin) {
     return res.status(400).json({ message: "Missing origin in headers" });
   }
-  
 
   if (!VALID_MODELS.includes(model)) {
     return res.status(400).json({ message: "Invalid table name" });
@@ -24,15 +20,25 @@ export const requestDelete = async (req, res) => {
     const db = getDbByOrigin(origin);
 
     const DeleteRequest = defineDeleteRequestModel(db);
+    const finatable = getModelByName(db,model)
+    
+
+    const normalizedIds = Array.isArray(recordId)
+      ? recordId.map((r) => (typeof r === "object" ? r.id : r))
+      : [typeof recordId === "object" ? recordId.id : recordId];
 
     const deleteRequest = await DeleteRequest.create({
       model,
-      recordId,
+      recordId: normalizedIds,
       reason: reason || null,
       status: "pending",
     });
+    const setrequest = await finatable.update(
+      { request: "pending" },
+      { where: { id: { [Op.in]: normalizedIds } } }
+    );
 
-    res.status(201).json({ success: true, data: deleteRequest });
+    res.status(201).json({ success: true, data: deleteRequest, setrequest });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -59,68 +65,202 @@ export const getallDeleteRequests = async (req, res) => {
   }
 };
 
-export const actionOnDeleteRequest = async (req, res) => {
-  const origin = req.user?.origin || req.headers["x-origin"];
+export const getallEditRequests = async (req, res) => {
+  const origin = req.user.origin || req.headers["x-origin"];
+  if (!origin) {
+    return res.status(400).json({ message: "Missing origin in headers" });
+  }
+  const db = getDbByOrigin(origin);
+
+  const EditRequest = defineEditRequestModel(db);
+  try {
+    const requests = await EditRequest.findAll({
+      where: { status: "pending" },
+      order: [["createdAt", "DESC"]],
+    });
+    return res.status(200).json({ requests, success: true });
+    
+  } catch (error) {
+    console.error("Error fetching delete requests:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const requestEdit = async (req, res) => {
+  const origin = req.user.origin || req.headers["x-origin"];
+  const { model, reason, recordId, changes } = req.body; 
+  // updatedFields = { fieldName: "newValue", ... }
+  console.log("response",changes)
   if (!origin) {
     return res.status(400).json({ message: "Missing origin in headers" });
   }
 
-  const db = getDbByOrigin(origin);
-
-  // Models mapping for dynamic deletion
-  const models = {
-    injuries: defineInjuryModel(db),
-    FteMedical: defineFTEMedicalModel(db),
-    oclmedical: defineOclMedicalModel(db),
-    dailymedical: defineDailyMedicalModel(db),
-  };
-
-  const DeleteRequest = defineDeleteRequestModel(db);
+  if (!VALID_MODELS.includes(model)) {
+    return res.status(400).json({ message: "Invalid table name" });
+  }
 
   try {
-    let { requestIds, action } = req.body;
+    const db = getDbByOrigin(origin);
 
-    // Convert single ID to array for uniform handling
-    if (!Array.isArray(requestIds)) {
-      requestIds = [requestIds];
-    }
+    const EditRequest = defineEditRequestModel(db);     
 
-    const results = [];
-
-    for (const requestId of requestIds) {
-      const request = await DeleteRequest.findByPk(requestId);
-      if (!request) {
-        results.push({ requestId, status: "not_found" });
-        continue;
-      }
-
-      if (action === "approve") {
-        const model = models[request.tableName];
-        if (!model) {
-          results.push({ requestId, status: "unknown_table" });
-          continue;
-        }
-
-        await model.destroy({ where: { id: request.recordId } });
-        request.status = "approved";
-        await request.save();
-        results.push({ requestId, status: "approved" });
-      } else if (action === "reject") {
-        request.status = "rejected";
-        await request.save();
-        results.push({ requestId, status: "rejected" });
-      } else {
-        results.push({ requestId, status: "invalid_action" });
-      }
-    }
-
-    return res.status(200).json({
-      message: `Bulk ${action} operation completed`,
-      results,
-      success: true,
+    // create an edit request entry
+    const editRequest = await EditRequest.create({
+      model,
+      recordId,
+      reason: reason || null,
+      changes, // keep the new data as JSON until approved
+      status: "pending",
     });
+    res.status(201).json({ success: true, data: editRequest });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+export const actionOnDeleteRequest = async (req, res) => {
+  const { requestIds, action, origin } = req.body;
+  console.log("");
+  if (!origin) {
+    return res.status(400).json({ message: "Missing origin in body" });
+  }
+  console.log("model name", requestIds);
+
+  try {
+    const db = getDbByOrigin(origin);
+    const DeleteRequest = defineDeleteRequestModel(db);
+
+    // requestIds is a single number
+    const request = await DeleteRequest.findByPk(requestIds);
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    // pick correct model
+    const findtable = getModelByName(db, request.model);
+    console.log("tablename", findtable);
+    if (!findtable) {
+      return res.status(400).json({ message: "Unknown table name" });
+    }
+
+    const deleterecordId = request.recordId; // ✅ already array
+
+
+    if (action === "approve") {
+      if (
+        !deleterecordId ||
+        (Array.isArray(deleterecordId) && deleterecordId.length === 0)
+      ) {
+        return res.status(400).json({ message: "No recordIds provided" });
+      }
+
+      // delete from original table
+      await findtable.destroy({ where: { id: deleterecordId } });
+
+      request.status = "approved";
+      await request.save();
+
+      return res.status(200).json({ success: true, status: "approved" });
+    } else if (action === "reject") {
+      await findtable.update(
+        { request: null }, // ✅ fields to update
+        { where: { id: deleterecordId } } // ✅ condition
+      );
+      request.status = "rejected";
+      await request.save();
+
+      return res.status(200).json({ success: true, status: "rejected" });
+    }
+
+    return res.status(400).json({ message: "Invalid action" });
   } catch (error) {
-    console.error("Error processing delete requests:", error);
+    console.error("Error processing delete request:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const actiononeditrequest = async (req, res) => {
+  const { requestId, origin, action } = req.body;
+  console.log("body", requestId);
+
+  if (!origin || !requestId || !action) {
+    return res.status(400).json({ message: "Something missing in body" });
+  }
+
+  try {
+    const db = getDbByOrigin(origin);
+    const EditRequest = defineEditRequestModel(db);
+
+    const request = await EditRequest.findByPk(requestId);
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    const findtable = getModelByName(db, request.model);
+    if (!findtable) {
+      return res.status(400).json({ message: "Unknown table name" });
+    }
+    console.log("findtable", findtable);
+
+    const recordId = request.recordId;
+    const changes = request.changes; // ✅ get from database
+
+    console.log("changes", changes);
+
+    if (action === "approve") {
+      if (!recordId) {
+        return res.status(400).json({ message: "No Id found to edit" });
+      }
+
+      // ✅ Apply changes
+      await findtable.update(
+        { ...changes, request: "done" },
+        { where: { id: recordId } }
+      );
+
+      request.status = "approved";
+      await request.save();
+
+      return res.status(200).json({ success: true, status: "approved" });
+
+    } else if (action === "reject") {
+      await findtable.update(
+        { request: null },
+        { where: { id: recordId } }
+      );
+
+      request.status = "rejected";
+      await request.save();
+
+      return res.status(200).json({ success: true, status: "rejected" });
+    }
+
+    return res.status(400).json({ message: "Invalid action" });
+
+  } catch (error) {
+    console.error("Error processing edit request:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

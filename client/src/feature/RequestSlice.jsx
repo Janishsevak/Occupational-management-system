@@ -27,20 +27,14 @@ export const fetchRequestsAsync = createAsyncThunk(
 export const raiseRequestAsync = createAsyncThunk(
   "request/raiseRequest",
   async ({ model, recordId, reason, origin }, { rejectWithValue }) => {
-    console.log("tablename", model);
     try {
-      const idToDelete =
-        Array.isArray(recordId) && recordId.length > 0 ? recordId[0] : null;
-        console.log("idToDelete", idToDelete);
-
-      if (!idToDelete) {
-        console.error("No record ID found in array");
-        return;
+      if (!Array.isArray(recordId) || recordId.length === 0) {
+        return rejectWithValue("No record IDs provided");
       }
 
       const response = await axios.post(
         `${import.meta.env.VITE_BASE_URL}/api/v1/request/deleterequest`,
-        { model, recordId:idToDelete , reason },
+        { model, recordId, reason },
         {
           headers: {
             "Content-Type": "application/json",
@@ -49,6 +43,7 @@ export const raiseRequestAsync = createAsyncThunk(
           },
         }
       );
+      console.log("resposnse", response);
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -60,18 +55,16 @@ export const raiseRequestAsync = createAsyncThunk(
 
 export const processDeleteRequestAsync = createAsyncThunk(
   "request/processDeleteRequest",
-  async ({ requestId, action, origin }, { rejectWithValue }) => {
+  async ({ requestIds, action, origin }, { rejectWithValue }) => {
+    console.log("id to delete",requestIds)
     try {
       const response = await axios.put(
-        `${
-          import.meta.env.VITE_BASE_URL
-        }/api/v1/request/actiononrequest/${requestId}`,
-        { action },
+        `${import.meta.env.VITE_BASE_URL}/api/v1/request/actiononrequest`,
+        { requestIds, action, origin},
         {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "x-origin": origin,
           },
         }
       );
@@ -87,19 +80,24 @@ export const processDeleteRequestAsync = createAsyncThunk(
 const requestSlice = createSlice({
   name: "request",
   initialState: {
-    requests: [],
+    selectedData: [],
+    requests:[],
     deleteRequests: [],
     editRequests: [],
     loading: false,
     error: null,
   },
   reducers: {
-    deleterequest: (state,action) => {
-      state.deleteRequests = action.payload;
-      state.loading = false;
-      state.error = null;
+    setSelectedData: (state, action) => {
+      state.selectedData = action.payload;
     },
-    editrequest: (state,action) => {
+    clearSelectedData: (state) => {
+      state.selectedData = [];
+    },
+    setdeleteRequests: (state, action) => {
+      state.deleteRequests = action.payload;
+    },
+    editrequest: (state, action) => {
       state.editRequests = action.payload; // set edit request data
       state.loading = false;
       state.error = null;
@@ -123,7 +121,7 @@ const requestSlice = createSlice({
       })
       .addCase(raiseRequestAsync.fulfilled, (state, action) => {
         state.loading = false;
-        state.requests.push(action.payload);
+        state.deleteRequests.push(action.payload);
       })
       .addCase(raiseRequestAsync.rejected, (state, action) => {
         state.loading = false;
@@ -134,15 +132,25 @@ const requestSlice = createSlice({
       })
       .addCase(processDeleteRequestAsync.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.requests.findIndex(
-          (req) => req.id === action.payload.requestId
-        );
-        if (index !== -1) {
-          state.requests[index] = {
-            ...state.requests[index],
-            status: action.payload.status,
-          };
+
+        // Bulk results from backend
+        const results = action.payload?.results || [];
+
+        if (!Array.isArray(state.requests)) {
+          state.requests = []; // ✅ ensure it's always an array
         }
+
+        results.forEach((result) => {
+          const index = state.requests.findIndex(
+            (req) => req.id === result.requestId
+          );
+          if (index !== -1) {
+            state.requests[index] = {
+              ...state.requests[index],
+              status: result.status,
+            };
+          }
+        });
       })
       .addCase(processDeleteRequestAsync.rejected, (state, action) => {
         state.loading = false;
@@ -150,5 +158,10 @@ const requestSlice = createSlice({
       });
   },
 });
-export const { deleterequest,editrequest} = requestSlice.actions;
+export const {
+  setSelectedData,
+  clearSelectedData,
+  editrequest,
+  setdeleteRequests,
+} = requestSlice.actions;
 export default requestSlice.reducer;

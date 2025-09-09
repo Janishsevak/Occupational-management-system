@@ -2,13 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { useDispatch, useSelector } from "react-redux";
-import { addInjuryAsync, fetchInjuriesAsync } from "../feture/InjurySlice";
 import { RotatingLines } from "react-loader-spinner";
+import { useAddInjuryMutation, useDeleteInjuryMutation, useFetchInjuriesQuery, useUpdateInjuryMutation } from "../feature/injuryapi";
 
 function Injury() {
   const origin = localStorage.getItem("origin");
-  const dispatch = useDispatch();
 
   const [formData, setFormData] = useState({
     date: "",
@@ -29,22 +27,26 @@ function Injury() {
   const navigate = useNavigate();
   const [data1, setdata1] = useState([]);
   const [activeIndex, setActiveIndex] = useState(null);
-  const { injuries, loading } = useSelector((state) => state.injury);
+  const {data:injuries=[],isLoading}=useFetchInjuriesQuery(origin);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/");
-      return;
-    }
-  }, []);
-  const fetchdata = () => {
-    console.log("Injury data", injuries);
-    dispatch(fetchInjuriesAsync({ origin }));
-  };
-  useEffect(() => {
-    fetchdata();
-  }, [dispatch, origin]);
+  const [addInjury] = useAddInjuryMutation();
+  const [updateInjury] = useUpdateInjuryMutation();
+  const [deleteInjury] = useDeleteInjuryMutation();
+
+  // useEffect(() => {
+  //   const token = localStorage.getItem("token");
+  //   if (!token) {
+  //     navigate("/");
+  //     return;
+  //   }
+  // }, []);
+  // const fetchdata = () => {
+  //   console.log("Injury data", injuries);
+    
+  // };
+  // useEffect(() => {
+  //   fetchdata();
+  // }, [dispatch, origin]);
 
   const submitHandler = async (e) => {
     e.preventDefault();
@@ -200,26 +202,29 @@ function Injury() {
   // wrapperClass=""
   // />);
 
-  return loading ? (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh", // full screen height
-      }}
-    >
-      <RotatingLines
-        visible={true}
-        height="96"
-        width="96"
-        color="grey"
-        strokeWidth="5"
-        animationDuration="0.75"
-        ariaLabel="rotating-lines-loading"
-      />
-    </div>
-  ) : (
+   if (isLoading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh", // full screen height
+        }}
+      >
+        <RotatingLines
+          visible={true}
+          height="96"
+          width="96"
+          color="grey"
+          strokeWidth="5"
+          animationDuration="0.75"
+          ariaLabel="rotating-lines-loading"
+        />
+      </div>
+    );
+  }
+  return (
     <div className="h-screen w-screen ">
       <div className="flex w-full">
         <button

@@ -116,6 +116,10 @@ export const defineInjuryModel = (sequelize) => {
     BillAmount: {
       type: DataTypes.INTEGER,
       allowNull: true,
+    },
+    request:{
+      type:DataTypes.STRING,
+      default:null,
     }
   }, {
     timestamps: true,
